@@ -1,7 +1,7 @@
 ## Expected project structure
 
  ```
- YourProjectName/
+ root folder/
 |-- src/                       # Source code root
 |   |-- main/                  # Main application package
 |   |   |-- MainApp.java      
