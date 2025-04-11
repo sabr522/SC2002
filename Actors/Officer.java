@@ -1,5 +1,7 @@
 package Actors;
 
+import java.util.ArrayList;
+
 public class Officer implements ApplicantRole {
     private String citizenApplication;
     private String officerApplication;
