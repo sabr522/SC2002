@@ -187,11 +187,21 @@ public class Project {
 	}
 	
 	public void updateSuccessfulApplicants(Applicant applicant) {
-		this.successfulApplicants.add(applicant);
+		String targetNRIC=applicant.getNRIC();
+		if (arrOfApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		{
+			this.successfulApplicants.add(applicant);
+		}
 	}
 	
 	public void updateUnsuccessfulApplicants(Applicant applicant) {
-		this.unsuccessfulApplicants.add(applicant);
+		String targetNRIC=applicant.getNRIC();
+		if (arrOfApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		{
+			this.unsuccessfulApplicants.add(applicant);
+		}
+		
+		
 	}
 	
 	public void updateBookedApplicants(Applicant applicant) {
