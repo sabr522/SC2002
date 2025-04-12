@@ -202,7 +202,7 @@ public class Project {
 	
 	public void updateWithdrawRequests(Applicant applicant) {
 		String targetNRIC=applicant.getNRIC();
-		if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)) || bookedApplicants.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)))
+		if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)) || bookedApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
 		{
 			this.withdrawRequests.add(applicant);
 		}	
