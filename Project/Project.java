@@ -5,9 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import Actors.Applicant;
-import Actors.Officer;
-
-//check 
+import Actors.Officer; 
 
 public class Project {
 	
