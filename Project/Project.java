@@ -4,6 +4,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import Actors.Applicant;
+import Actors.Officer;
+
 public class Project {
 	
 	private String name;
@@ -19,7 +22,7 @@ public class Project {
 	private int avalNo2Room;
 	private int avalNo3Room;
 	
-	private List<Applicant> arrOfApplicants = new ArrayList<>(); //all applicants, once added we never remove
+	private List<Applicant> arrOfApplicants = new ArrayList<>(); //pending applicants (not successful or unsuccessful)
 	private List<Applicant> successfulApplicants = new ArrayList<>(); //all successful applicants who haven't booked yet or haven't withdrawn yet
 	private List<Applicant> unsuccessfulApplicants = new ArrayList<>(); //all unsuccessful applicants (initially unsuccessful or successful and then withdraw)
 	private List<Applicant> bookedApplicants = new ArrayList<>(); //all successful applicants who have booked
