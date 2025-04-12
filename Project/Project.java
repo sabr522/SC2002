@@ -46,10 +46,10 @@ public class Project {
 	}
 	
 	//Adds project to static array containing all projects
-	public void updateAllProjects() {
-		if (this.updatedInAllProjects==false)
-		allProjects.add(this);
-		this.updatedInAllProjects=true;
+	public static void updateAllProjects(Project project) {
+		if (project.updatedInAllProjects==false)
+		allProjects.add(project);
+		project.updatedInAllProjects=true;
 	}
 	
 	//Getter Methods
