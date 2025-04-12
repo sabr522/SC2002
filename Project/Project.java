@@ -107,7 +107,7 @@ public class Project {
 	
 	
 	public List<Applicant> getUnsuccessfulApplicants(){
-		return this.unsuccesfulApplicants;
+		return this.unsuccessfulApplicants;
 	}
 	
 	
