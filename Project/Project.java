@@ -212,7 +212,7 @@ public class Project {
 		String targetNRIC=applicant.getNRIC();
 		if (withdrawRequests.removeIf(a -> a.getNRIC().equals(targetNRIC)))
 		{
-			this.unsuccessfulApp.add(applicant);
+			this.unsuccessfulApplicants.add(applicant);
 		}	
 	}
 	
