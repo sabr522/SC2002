@@ -122,7 +122,7 @@ public class Project {
 	
 	
 	public static List<Project> getAllProjects(){
-		return this.allProjects;
+		return allProjects;
 	}
 	
 	//Prints details
