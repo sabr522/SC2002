@@ -192,8 +192,8 @@ public class Project {
 	}
 	
 	public void updateBookedApplicants(Applicant applicant) {
-		targetNRIC=applicant.getNRIC();
-		if (successfulApplicants.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)))
+		String targetNRIC=applicant.getNRIC();
+		if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
 		{
 			this.bookedApplicants.add(applicant);
 		}	
@@ -201,16 +201,16 @@ public class Project {
 	
 	
 	public void updateWithdrawRequests(Applicant applicant) {
-		targetNRIC=applicant.getNRIC();
-		if (successfulApplicants.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)) || bookedApplicants.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)))
+		String targetNRIC=applicant.getNRIC();
+		if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)) || bookedApplicants.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)))
 		{
 			this.withdrawRequests.add(applicant);
 		}	
 	}
 	
 	public void updateWithdrawToUnsuccessful(Applicant applicant) {
-		targetNRIC=applicant.getNRIC();
-		if (withdrawRequests.removeIf(applicant -> applicant.getNRIC().equals(targetNRIC)))
+		String targetNRIC=applicant.getNRIC();
+		if (withdrawRequests.removeIf(a -> a.getNRIC().equals(targetNRIC)))
 		{
 			this.unsuccessfulApp.add(applicant);
 		}	
