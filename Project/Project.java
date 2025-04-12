@@ -121,7 +121,7 @@ public class Project {
 	}
 	
 	
-	public List<Project> getAllProjects(){
+	public static List<Project> getAllProjects(){
 		return this.allProjects;
 	}
 	
