@@ -76,7 +76,7 @@ public class Project {
 		return this.appOpeningDate;
 	}
 	
-	public LocalDate getAppCloseingDate() {
+	public LocalDate getAppClosingDate() {
 		return this.appClosingDate;
 	}
 	
