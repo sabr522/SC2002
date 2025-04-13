@@ -1,7 +1,9 @@
 package Login;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -74,4 +76,36 @@ public class Login{
         System.out.println("Invalid password. Please enter valid password:");
         return false;
     }
+
+    public static boolean changePassword(String[] userRow, String newPass, String confirmPass, ArrayList<String[]> data, String filePath) {
+        if (!newPass.equals(confirmPass)) {
+            System.out.println("Passwords do not match.");
+            return false;
+        }
+    
+        userRow[4] = newPass;
+        System.out.println("Password updated successfully.");  
+    
+        saveDataToCSV(filePath, data); 
+        return true;
+    }
+    
+    private static void saveDataToCSV(String filePath, ArrayList<String[]> data) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+            for (String[] row : data) {
+                StringBuilder sb = new StringBuilder();
+                for (String field : row) {
+                    sb.append(field).append(",");
+                }
+                sb.setLength(sb.length() - 1); 
+                bw.write(sb.toString());
+                bw.newLine();
+            }
+            System.out.println("Data successfully written to CSV.");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to write data to CSV.");
+        }
+    }
+
 }
