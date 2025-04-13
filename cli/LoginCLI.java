@@ -8,9 +8,10 @@ public class LoginCLI {
     public static void main(String[] args) {
 
     Scanner scan = new Scanner(System.in);  
-		System.out.println("1. Applicant");
-		System.out.println("2. Officer");
-		System.out.println("3. Manager");
+        System.out.println("1. Applicant");
+        System.out.println("2. Officer");
+        System.out.println("3. Manager");
+
         System.out.print("Choose a role:");
         
         int role = scan.nextInt();
