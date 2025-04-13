@@ -10,7 +10,7 @@ import Actors.Officer;
 public class Project {
 	
 	private String name;
-	private String visibility;
+	private Boolean visibility;
 	private String creatorName;
 	private String neighbourhood;
 	private LocalDate appOpeningDate;
@@ -33,7 +33,7 @@ public class Project {
 	
 	
 	//Constructor
-	public Project(String name, String visibility, String creatorName, String neighbourhood, LocalDate appOpeningDate, LocalDate appClosingDate, int no2Room, int no3Room ) {
+	public Project(String name, Boolean visibility, String creatorName, String neighbourhood, LocalDate appOpeningDate, LocalDate appClosingDate, int no2Room, int no3Room ) {
 		
 		this.name=name;
 		this.visibility=visibility;
@@ -60,7 +60,7 @@ public class Project {
 		return this.name;
 	}
 	
-	public String getVisibility() {
+	public Boolean getVisibility() {
 		return this.visibility;
 	}
 	
@@ -76,7 +76,7 @@ public class Project {
 		return this.appOpeningDate;
 	}
 	
-	public LocalDate getAppCloseingDate() {
+	public LocalDate getAppClosingDate() {
 		return this.appClosingDate;
 	}
 	
@@ -153,7 +153,7 @@ public class Project {
 		this.creatorName=creatorName;
 	}
 	
-	public void setVisibility(String visibility) {
+	public void setVisibility(Boolean visibility) {
 		this.visibility=visibility;
 	}
 	
@@ -260,5 +260,10 @@ public class Project {
 			}	
 		}
 	}
-		
+
+	// checks if 2 projects are in same period
+	public boolean isClashing(LocalDate start1, LocalDate end1) {
+		return !(end1.isBefore(this.appClosingDate) || start1.isAfter(this.appOpeningDate));
+	}	
+
 }
