@@ -58,13 +58,13 @@ public class LoginCLI {
                     System.out.println("Accessing Role...");
                     switch (role) {
                         case 1:
-                            // ApplicantCLI.main(new String[]{});
+                            ApplicantCLI.main(new String[]{});
                             break;
                         case 2:
                             OfficerCLI.main(new String[]{});
                             break;
                         case 3:
-                            // ManagerCLI.main(new String[]{});
+                            ManagerCLI.main(new String[]{});
                             break;
                     }
                     break;
