@@ -1,0 +1,4 @@
+ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied
+S1234567A,Acacia Breeze,3-Room,Successful,false,true
+S9876543Z,Acacia Breeze,2-Room,Pending,false,true
+S1234567A,Orchid Grove,2-Room,Pending,false,false
