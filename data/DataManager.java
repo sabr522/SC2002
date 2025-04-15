@@ -33,7 +33,7 @@ public class DataManager {
     public DataManager() {
         // Ensure data files exist on initialization (optional)
         ensureFileExists(USERS_CSV_PATH, "NRIC,Name,Age,MaritalStatus,PasswordHash,Role");
-        ensureFileExists(PROJECTS_CSV_PATH, "ProjectName,Neighborhood,Visibility,CreatorNRIC,AppOpeningDate,AppClosingDate");
+        ensureFileExists(PROJECTS_CSV_PATH, "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate");
         ensureFileExists(PROJECT_FLATS_CSV_PATH, "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice");
         ensureFileExists(PROJECT_OFFICERS_CSV_PATH, "ProjectName,OfficerNRIC,Status");
         ensureFileExists(APPLICATIONS_CSV_PATH, "ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied");
@@ -104,6 +104,7 @@ public class DataManager {
 
     /**
      * Loads all users (Applicants, Officers, Managers) from users.csv.
+     * E.g { "S1234567A": User(Alice Tan...), "G1234567B": User(Bob Lim...), ... }
      * @return A Map where the key is NRIC and the value is the User object.
      */
     public Map<String, User> loadUsers() {
@@ -136,19 +137,20 @@ public class DataManager {
     /**
      * Loads the core project data from projects.csv.
      * Does NOT load related data like flats, officers, or applicants yet.
+     * E.g { "Acacia Breeze": Project(Acacia Breeze...), "Orchid Grove": Project(Orchid Grove...), ... }
      * @return A Map where the key is ProjectName and the value is the Project object.
      */
     public Map<String, Project> loadProjectsCore() {
         Map<String, Project> projects = new HashMap<>();
-        List<String[]> csvData = readCsvFile(PROJECTS_CSV_PATH);
-        // Header: ProjectName[0],Neighborhood[1],Visibility[2],CreatorNRIC[3],AppOpeningDate[4],AppClosingDate[5]
+        List<String[]> csvData = readCsvFi le(PROJECTS_CSV_PATH);
+        // Header: ProjectName[0],Neighborhood[1],Visibility[2],CreatorName[3],AppOpeningDate[4],AppClosingDate[5]
         for (String[] values : csvData) {
             if (values.length < 6) continue;
             try {
                 String projectName = values[0];
                 String neighborhood = values[1];
                 boolean visibility = Boolean.parseBoolean(values[2]);
-                String creatorNric = values[3]; // Manager's NRIC
+                String creatorName = values[3]; // Manager's Name
                 LocalDate openDate = LocalDate.parse(values[4], DATE_FORMATTER);
                 LocalDate closeDate = LocalDate.parse(values[5], DATE_FORMATTER);
 
@@ -158,7 +160,7 @@ public class DataManager {
                  //         LocalDate appOpeningDate, LocalDate appClosingDate, int num2Rooms, int num3Rooms)
                  // --> We need to adapt the constructor or loading process because room numbers aren't here.
                  // Let's assume a simpler constructor for core data, and rooms are added later.
-                 Project project = new Project(projectName, visibility, creatorNric, neighborhood, openDate, closeDate);
+                 Project project = new Project(projectName, visibility, creatorName, neighborhood, openDate, closeDate);
                  projects.put(projectName, project);
 
             } catch (DateTimeParseException e) { /* handle error */ }
@@ -338,7 +340,7 @@ public class DataManager {
 
     private void saveProjectsCore(Map<String, Project> projects) {
         List<String[]> csvData = new ArrayList<>();
-        String header = "ProjectName,Neighborhood,Visibility,CreatorNRIC,AppOpeningDate,AppClosingDate";
+        String header = "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate";
         for (Project project : projects.values()) {
              csvData.add(new String[] {
                  escapeCsvField(project.getName()),
@@ -469,8 +471,7 @@ public class DataManager {
           List<Applicant> withdrawing = new ArrayList<>();
            for (Project p : allProjects.values()) {
                 if (managerName.equals(p.getCreatorName())) {
-                    // Assumes Project has a method to get applicants requesting withdrawal
-                    withdrawing.addAll(p.getApplicantsRequestingWithdrawal());
+                    withdrawing.addAll(p.getWithdrawReq());
                 }
            }
            return withdrawing;
