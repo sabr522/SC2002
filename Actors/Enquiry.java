@@ -4,6 +4,7 @@ import Actors.User; // Base class
 import Actors.Applicant;
 import Actors.Officer;
 import Actors.Manager;
+import Actors.Reply;
 import Project.Project;
 
 import java.util.ArrayList;
