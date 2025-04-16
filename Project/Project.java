@@ -23,6 +23,7 @@ public class Project {
 	private int avalNo2Room;
 	private int avalNo3Room;
 	
+	List<Applicant> allApplicants = new ArrayList<>(); // all applicants
 	private List<Applicant> arrOfApplicants = new ArrayList<>(); //pending applicants (not successful or unsuccessful)
 	private List<Applicant> successfulApplicants = new ArrayList<>(); //all successful applicants who haven't booked yet or haven't withdrawn yet
 	private List<Applicant> unsuccessfulApplicants = new ArrayList<>(); //all unsuccessful applicants (initially unsuccessful or successful and then withdraw)
@@ -103,6 +104,25 @@ public class Project {
 
 	public List<Officer> getArrOfOfficers(){
 		return this.arrOfOfficers;
+	}
+	public List<Applicant> getAllApplicants() {
+	
+		// Add pending applicants
+		if (getArrOfApplicants() != null) {
+			allApplicants.addAll(getArrOfApplicants());
+		}
+	
+		// Add successful applicants
+		if (getSuccessfulApplicants() != null) {
+			allApplicants.addAll(getSuccessfulApplicants());
+		}
+	
+		// Add unsuccessful applicants
+		if (getUnsuccessfulApplicants() != null) {
+			allApplicants.addAll(getUnsuccessfulApplicants());
+		}
+	
+		return allApplicants;
 	}
 	
 	public List<Applicant> getArrOfApplicants(){
