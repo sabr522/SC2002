@@ -235,7 +235,12 @@ public class Project {
 		if (creatorName.equals(this.creatorName)){
 			if (this.arrOfPendingOfficers.remove(officer))
 			{
-				this.arrOfOfficers.add(officer);
+				if (arrOfOfficers.size() < 10) {
+					this.arrOfOfficers.add(officer);
+				} else {
+					System.out.println("Cannot add more officers. Maximum reached.");
+				}
+				
 			}
 			else{System.out.println("Officer does not exist.");}
 			
