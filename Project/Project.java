@@ -15,6 +15,7 @@ public class Project {
 	private String neighbourhood;
 	private LocalDate appOpeningDate;
 	private LocalDate appClosingDate;
+	private List<Officer> arrOfPendingOfficers = new ArrayList<>();
 	private List<Officer> arrOfOfficers = new ArrayList<>();
 	
 	private int no2Room;
@@ -95,6 +96,11 @@ public class Project {
 	public int getAvalNo3Room() {
 		return this.avalNo3Room;
 	}
+
+	public List<Officer> getPendingOfficerRegistrations(){
+		return this.arrOfPendingOfficers;
+	}
+
 	public List<Officer> getArrOfOfficers(){
 		return this.arrOfOfficers;
 	}
@@ -145,52 +151,102 @@ public class Project {
 	
 	
 	//Setter Methods
-	public void setName(String name) {
-		this.name=name;
+	public void setName(String creatorName, String name) {
+		if (creatorName.equals(this.creatorName)){
+			this.name=name;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
+		
 	}
 	
 	public void setCreatorName(String creatorName) {
 		this.creatorName=creatorName;
 	}
 	
-	public void setVisibility(Boolean visibility) {
-		this.visibility=visibility;
+	public void setVisibility(String creatorName, Boolean visibility) {
+		if (creatorName.equals(this.creatorName)){
+			this.visibility=visibility;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
-	public void setNeighbourhood(String neighbourhood) {
-		this.neighbourhood=neighbourhood;
+	public void setNeighbourhood(String creatorName, String neighbourhood) {
+		if (creatorName.equals(this.creatorName)){
+			this.neighbourhood=neighbourhood;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
-	public void setAppOpeningDate(LocalDate appOpeningDate) {
-		this.appOpeningDate=appOpeningDate;
+	public void setAppOpeningDate(String creatorName, LocalDate appOpeningDate) {
+		if (creatorName.equals(this.creatorName)){
+			this.appOpeningDate=appOpeningDate;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}	
 	}
 	
-	public void setAppClosingDate(LocalDate appClosingDate) {
-		this.appClosingDate=appClosingDate;
+	public void setAppClosingDate(String creatorName, LocalDate appClosingDate) {
+		if (creatorName.equals(this.creatorName)){
+			this.appClosingDate=appClosingDate;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
 	public void setAvalNo2Room(int avalNo2Room) {
-		this.avalNo2Room=avalNo2Room;
+			this.avalNo2Room=avalNo2Room;
 	}
 	
 	public void setAvalNo3Room(int avalNo3Room) {
-		this.avalNo3Room=avalNo3Room;
+			this.avalNo3Room=avalNo3Room;
 	}
 	
-	public void setNo2Room(int no2Room) {
-		this.no2Room=no2Room;
+	public void setNo2Room(String creatorName, int no2Room) {
+		if (creatorName.equals(this.creatorName)){
+			this.no2Room=no2Room;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
-	public void setNo3Room(int no3Room) {
-		this.no3Room=no3Room;
+	public void setNo3Room(String creatorName, int no3Room) {
+		if (creatorName.equals(this.creatorName)){
+			this.no3Room=no3Room;
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
-	public void updateArrOfOfficers(Officer officer) {
-		this.arrOfOfficers.add(officer);
+	public void updateArrOfPendingOfficers (Officer officer) {
+			this.arrOfOfficers.add(officer);
+	}
+
+	public void updateArrOfOfficers(String creatorName, Officer officer) {
+		if (creatorName.equals(this.creatorName)){
+			if (this.arrOfPendingOfficers.remove(officer))
+			{
+				this.arrOfOfficers.add(officer);
+			}
+			else{System.out.println("Officer does not exist.");}
+			
+		}
+		else{
+			System.out.println("Unauthorised access!");
+		}
 	}
 	
 	public void updateArrOfApplicants(Applicant applicant) {
-		this.arrOfApplicants.add(applicant);
+			this.arrOfApplicants.add(applicant);
 	}
 	
 	public void updateSuccessfulApplicants(Applicant applicant) {
