@@ -1,11 +1,11 @@
 package data;
 
 import Actors.User;
-import Project.Project;
-// Add imports for Applicant, Officer, Enquiry, etc.
 import Actors.Applicant;
+import Actors.Manager;
 import Actors.Officer;
-
+import Project.Project;
+// Add imports for Enquiry if needed
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -17,27 +17,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap; // For building relationships
 
+/**
+ * Handles loading from and saving data to CSV files.
+ * Acts as the persistence layer for the application.
+ * Provides methods to retrieve filtered data subsets based on application state.
+ */
 public class DataManager {
 
-    // Define file paths using the new structure
-    private static final String USERS_CSV_PATH = "data_files/users.csv";
-    private static final String PROJECTS_CSV_PATH = "data_files/projects.csv";
-    private static final String PROJECT_FLATS_CSV_PATH = "data_files/project_flats.csv";
-    private static final String PROJECT_OFFICERS_CSV_PATH = "data_files/project_officers.csv";
-    private static final String APPLICATIONS_CSV_PATH = "data_files/applications.csv";
-    // private static final String ENQUIRIES_CSV_PATH = "data_files/enquiries.csv"; // If needed
+    // Define file paths using a consistent structure
+    private static final String DATA_FOLDER = "data_folders"; // Define base folder
+    private static final String USERS_CSV_PATH = DATA_FOLDER + "/users.csv";
+    private static final String PROJECTS_CSV_PATH = DATA_FOLDER + "/project.csv"; // Corrected name from project_core
+    private static final String PROJECT_FLATS_CSV_PATH = DATA_FOLDER + "/project_flats.csv";
+    private static final String PROJECT_OFFICERS_CSV_PATH = DATA_FOLDER + "/project_officers.csv";
+    private static final String APPLICATIONS_CSV_PATH = DATA_FOLDER + "/applications.csv";
+    // private static final String ENQUIRIES_CSV_PATH = DATA_FOLDER + "/enquiries.csv"; // If needed
 
+    // Consistent date formatter
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // YYYY-MM-DD
+
+    // Define CSV Headers
+    private static final String USERS_HEADER = "NRIC,Name,Age,MaritalStatus,PasswordHash,Role";
+    private static final String PROJECTS_HEADER = "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate";
+    private static final String FLATS_HEADER = "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice"; // Added SellingPrice for completeness
+    private static final String OFFICERS_HEADER = "ProjectName,OfficerNRIC,Status"; // Status: Approved | Pending
+    private static final String APPLICATIONS_HEADER = "ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied"; // Status: Pending | Successful | Unsuccessful | Withdrawn | Booked
+    // private static final String ENQUIRIES_HEADER = "EnquiryID,SubmitterNRIC,ProjectName,EnquiryText,ReplyText,Status"; // If needed
+
 
     // --- Constructor ---
     public DataManager() {
-        // Ensure data files exist on initialization (optional)
-        ensureFileExists(USERS_CSV_PATH, "NRIC,Name,Age,MaritalStatus,PasswordHash,Role");
-        ensureFileExists(PROJECTS_CSV_PATH, "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate");
-        ensureFileExists(PROJECT_FLATS_CSV_PATH, "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice");
-        ensureFileExists(PROJECT_OFFICERS_CSV_PATH, "ProjectName,OfficerNRIC,Status");
-        ensureFileExists(APPLICATIONS_CSV_PATH, "ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied");
-        // ensureFileExists(ENQUIRIES_CSV_PATH, "EnquiryID,SubmitterNRIC,ProjectName,EnquiryText,ReplyText,Status");
+        // Ensure data files exist on initialization (optional but recommended)
+        ensureFileExists(USERS_CSV_PATH, USERS_HEADER);
+        ensureFileExists(PROJECTS_CSV_PATH, PROJECTS_HEADER);
+        ensureFileExists(PROJECT_FLATS_CSV_PATH, FLATS_HEADER);
+        ensureFileExists(PROJECT_OFFICERS_CSV_PATH, OFFICERS_HEADER);
+        ensureFileExists(APPLICATIONS_CSV_PATH, APPLICATIONS_HEADER);
+        // ensureFileExists(ENQUIRIES_CSV_PATH, ENQUIRIES_HEADER); // If needed
     }
 
     // --- File Existence Check ---
@@ -46,56 +62,102 @@ public class DataManager {
         if (!file.exists()) {
             System.out.println("File not found, creating: " + filePath);
             try {
-                file.getParentFile().mkdirs(); // Ensure directory exists
+                // Ensure parent directory exists
+                File parentDir = file.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    if (parentDir.mkdirs()) {
+                         System.out.println("Created directory: " + parentDir.getPath());
+                    } else {
+                         System.err.println("Failed to create directory: " + parentDir.getPath());
+                         // Consider throwing an exception here if directory is crucial
+                    }
+                }
+
                 if (file.createNewFile()) {
                     // Write header to the new file
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
                         bw.write(header);
                         bw.newLine();
+                         System.out.println("Header written to " + filePath);
                     }
                 }
             } catch (IOException e) {
-                System.err.println("Error creating file or writing header: " + filePath);
+                System.err.println("Error creating file or writing header for: " + filePath);
                 e.printStackTrace();
+                 // Consider re-throwing or handling more gracefully
             }
         }
     }
 
     // --- Generic CSV Reading (Simplified) ---
-    private List<String[]> readCsvFile(String filePath) {
+    private List<String[]> readCsvFile(String filePath) throws IOException {
         List<String[]> data = new ArrayList<>();
-        // Skip header row during processing now
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath, StandardCharsets.UTF_8))) {
+        File file = new File(filePath);
+
+        // Check if file exists before attempting to read
+        if (!file.exists()) {
+             // Returning empty list might be okay if file creation failed silently earlier
+             // Or throw FileNotFoundException for clarity
+             System.err.println("Warning: File not found during read: " + filePath + ". Returning empty data.");
+            // throw new FileNotFoundException("CSV file not found: " + filePath);
+             return data;
+        }
+
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
             String line;
             br.readLine(); // Skip header row
             while ((line = br.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    // Basic CSV split - still doesn't handle quoted commas well
-                    String[] values = line.split(",", -1);
+                    // Basic CSV split - doesn't handle quoted commas well.
+                    // For this project, ensure data doesn't contain commas within fields
+                    // or use a proper CSV library if needed.
+                    String[] values = line.split(",", -1); // Keep trailing empty fields
                     data.add(values);
                 }
             }
         } catch (FileNotFoundException e) {
+             // Should be caught by the check above, but good practice to keep
              System.err.println("Error: File not found when reading: " + filePath);
+             throw e; // Re-throw FNF
         } catch (IOException e) {
             System.err.println("Error reading CSV file: " + filePath);
             e.printStackTrace();
+            throw e; // Re-throw IOE
         }
         return data;
     }
 
+
     // --- Generic CSV Writing (Simplified) ---
-    private void writeCsvFile(String filePath, List<String[]> data, String header) {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, StandardCharsets.UTF_8))) {
+    private void writeCsvFile(String filePath, List<String[]> data, String header) throws IOException {
+        // Ensure directory exists before writing
+        File file = new File(filePath);
+         File parentDir = file.getParentFile();
+         if (parentDir != null && !parentDir.exists()) {
+             if (!parentDir.mkdirs()) {
+                  throw new IOException("Failed to create directory for saving: " + parentDir.getPath());
+             }
+         }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath, StandardCharsets.UTF_8))) { // Overwrite mode
             bw.write(header); // Write header every time
             bw.newLine();
             for (String[] rowData : data) {
-                bw.write(String.join(",", rowData));
-                bw.newLine();
+                 if (rowData != null) { // Basic null check for row
+                     // Escape each field before joining
+                     List<String> escapedFields = new ArrayList<>();
+                     for (String field : rowData) {
+                         escapedFields.add(escapeCsvField(field));
+                     }
+                     bw.write(String.join(",", escapedFields));
+                     bw.newLine();
+                 }
             }
         } catch (IOException e) {
             System.err.println("Error writing to CSV file: " + filePath);
             e.printStackTrace();
+            throw e; // Re-throw
         }
     }
 
@@ -104,197 +166,319 @@ public class DataManager {
 
     /**
      * Loads all users (Applicants, Officers, Managers) from users.csv.
-     * E.g { "S1234567A": User(Alice Tan...), "G1234567B": User(Bob Lim...), ... }
      * @return A Map where the key is NRIC and the value is the User object.
      */
-    public Map<String, User> loadUsers() {
+    public Map<String, User> loadUsers() throws IOException {
         Map<String, User> users = new HashMap<>();
         List<String[]> csvData = readCsvFile(USERS_CSV_PATH);
         // Header: NRIC[0],Name[1],Age[2],MaritalStatus[3],PasswordHash[4],Role[5]
+
         for (String[] values : csvData) {
-             if (values.length < 6) continue; // Basic check
-             try {
-                String nric = values[0];
-                String name = values[1];
-                int age = Integer.parseInt(values[2]);
-                String maritalStatus = values[3];
-                String password = values[4]; // Plain text or hash
-                String role = values[5];
+            if (values.length < 6) {
+                 System.err.println("Skipping malformed user row: " + String.join(",", values));
+                 continue; // Basic check for enough columns
+            }
+            try {
+                String nric = values[0].trim();
+                String name = values[1].trim();
+                int age = Integer.parseInt(values[2].trim());
+                String maritalStatus = values[3].trim();
+                String password = values[4]; // Keep as is (plain text or hash)
+                String role = values[5].trim();
 
-                // Here you could potentially instantiate specific subclasses (Applicant, Officer, Manager)
-                // if they inherit from User and you load their specific data elsewhere.
-                // For simplicity now, we use the base User class.
-                User user = new User(name, nric, age, maritalStatus, password, role);
-                users.put(nric, user); // Store by NRIC for easy lookup
+                if (nric.isEmpty()) {
+                     System.err.println("Skipping user row with empty NRIC.");
+                     continue;
+                }
 
-             } catch (NumberFormatException e) { /* handle error */ }
-             catch (Exception e) { /* handle error */ }
+                User user = null;
+                switch (role.toLowerCase()) {
+                    case "manager":
+                        // Use the updated Manager constructor (without initialProjects)
+                        user = new Manager(name, nric, age, maritalStatus, password);
+                        break;
+                    case "officer":
+                         // Assuming Officer constructor exists: Officer(name, nric, age, maritalStatus, password)
+                         // Officer status (approved/pending) is determined later from project_officers.csv
+                        user = new Officer(name, nric, age, maritalStatus, password);
+                         ((Officer)user).setStatus(false); // Default to not approved until checked
+                        break;
+                    case "applicant":
+                         // Assuming Applicant constructor exists: Applicant(name, nric, age, maritalStatus, password)
+                         // Application details (project, status, etc.) loaded later from applications.csv
+                        user = new Applicant(name, nric, age, maritalStatus, password);
+                        break;
+                    default:
+                        System.err.println("Warning: Invalid role '" + role + "' found for NRIC " + nric + ". Skipping user.");
+                        continue; // Skip this user
+                }
+
+                if (users.containsKey(nric)) {
+                     System.err.println("Warning: Duplicate NRIC found: " + nric + ". Overwriting previous entry.");
+                }
+                users.put(nric, user);
+
+            } catch (NumberFormatException e) {
+                System.err.println("Error parsing age for user row: " + String.join(",", values) + ". Skipping.");
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error creating user object: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
+            } catch (Exception e) { // Catch broader exceptions during object creation
+                 System.err.println("Unexpected error processing user row: " + String.join(",", values));
+                 e.printStackTrace();
+            }
         }
         System.out.println("Loaded " + users.size() + " users.");
         return users;
     }
 
+
     /**
      * Loads the core project data from projects.csv.
      * Does NOT load related data like flats, officers, or applicants yet.
-     * E.g { "Acacia Breeze": Project(Acacia Breeze...), "Orchid Grove": Project(Orchid Grove...), ... }
      * @return A Map where the key is ProjectName and the value is the Project object.
      */
-    public Map<String, Project> loadProjectsCore() {
+    public Map<String, Project> loadProjectsCore() throws IOException {
         Map<String, Project> projects = new HashMap<>();
-        List<String[]> csvData = readCsvFi le(PROJECTS_CSV_PATH);
+        List<String[]> csvData = readCsvFile(PROJECTS_CSV_PATH);
         // Header: ProjectName[0],Neighborhood[1],Visibility[2],CreatorName[3],AppOpeningDate[4],AppClosingDate[5]
+
         for (String[] values : csvData) {
-            if (values.length < 6) continue;
+            if (values.length < 6) {
+                System.err.println("Skipping malformed project row: " + String.join(",", values));
+                 continue;
+            }
             try {
-                String projectName = values[0];
-                String neighborhood = values[1];
-                boolean visibility = Boolean.parseBoolean(values[2]);
-                String creatorName = values[3]; // Manager's Name
-                LocalDate openDate = LocalDate.parse(values[4], DATE_FORMATTER);
-                LocalDate closeDate = LocalDate.parse(values[5], DATE_FORMATTER);
+                String projectName = values[0].trim();
+                String neighborhood = values[1].trim();
+                boolean visibility = Boolean.parseBoolean(values[2].trim().toLowerCase());
+                String creatorName = values[3].trim(); // Manager's Name (used for linking/filtering)
+                LocalDate openDate = LocalDate.parse(values[4].trim(), DATE_FORMATTER);
+                LocalDate closeDate = LocalDate.parse(values[5].trim(), DATE_FORMATTER);
 
-                // Create project with basic info - flat/officer/applicant lists are initially empty
-                // Assumes a constructor like this exists, adjust as needed.
-                 // Project(String name, Boolean visibility, String creatorName, String neighbourhood,
-                 //         LocalDate appOpeningDate, LocalDate appClosingDate, int num2Rooms, int num3Rooms)
-                 // --> We need to adapt the constructor or loading process because room numbers aren't here.
-                 // Let's assume a simpler constructor for core data, and rooms are added later.
-                 Project project = new Project(projectName, visibility, creatorName, neighborhood, openDate, closeDate);
-                 projects.put(projectName, project);
+                 if (projectName.isEmpty()) {
+                     System.err.println("Skipping project row with empty Project Name.");
+                     continue;
+                 }
+                 if (creatorName.isEmpty()) {
+                      System.err.println("Warning: Project row with empty Creator Name: " + projectName);
+                      // Decide if this is allowed or should be skipped
+                 }
 
-            } catch (DateTimeParseException e) { /* handle error */ }
-            catch (Exception e) { /* handle error */ }
+                // Assume a Project constructor that takes core info and initializes lists/counts
+                // Example: Project(name, visibility, creatorName, neighborhood, openDate, closeDate, num2R, num3R)
+                // We initialize room counts to 0 here; they will be updated by loadProjectFlats.
+                Project project = new Project(projectName, visibility, creatorName, neighborhood,
+                                              openDate, closeDate, 0, 0);
+
+                 if (projects.containsKey(projectName)) {
+                     System.err.println("Warning: Duplicate Project Name found: " + projectName + ". Overwriting previous entry.");
+                 }
+                projects.put(projectName, project);
+
+            } catch (DateTimeParseException e) {
+                System.err.println("Error parsing date for project row: " + String.join(",", values) + ". Skipping.");
+            } catch (IllegalArgumentException e) { // Catch potential errors in Boolean.parseBoolean or Project constructor
+                 System.err.println("Error processing project data: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
+            } catch (Exception e) {
+                 System.err.println("Unexpected error processing project row: " + String.join(",", values));
+                 e.printStackTrace();
+            }
         }
-         System.out.println("Loaded " + projects.size() + " core projects.");
+        System.out.println("Loaded " + projects.size() + " core projects.");
         return projects;
     }
 
+
     /**
-      * Loads flat information and adds it to the corresponding Project objects.
-      * Must be called *after* loadProjectsCore.
-      * @param projects The map of projects loaded by loadProjectsCore.
-      */
-    public void loadProjectFlats(Map<String, Project> projects) {
+     * Loads flat information and adds it to the corresponding Project objects.
+     * Must be called *after* loadProjectsCore.
+     * @param projects The map of projects loaded by loadProjectsCore.
+     */
+    public void loadProjectFlats(Map<String, Project> projects) throws IOException {
         List<String[]> csvData = readCsvFile(PROJECT_FLATS_CSV_PATH);
         int flatsLoaded = 0;
         // Header: ProjectName[0],FlatType[1],TotalUnits[2],AvailableUnits[3],SellingPrice[4]
+
         for (String[] values : csvData) {
-             if (values.length < 5) continue;
-             try {
-                String projectName = values[0];
+            if (values.length < 5) { // Expect at least 5 columns now
+                System.err.println("Skipping malformed project flat row: " + String.join(",", values));
+                continue;
+            }
+            try {
+                String projectName = values[0].trim();
                 Project project = projects.get(projectName); // Find the project object
+
                 if (project != null) {
-                    String flatType = values[1];
-                    int totalUnits = Integer.parseInt(values[2]);
-                    int availableUnits = Integer.parseInt(values[3]);
-                    // double sellingPrice = Double.parseDouble(values[4]); // If needed
+                    String flatType = values[1].trim();
+                    int totalUnits = Integer.parseInt(values[2].trim());
+                    int availableUnits = Integer.parseInt(values[3].trim());
+                    // double sellingPrice = Double.parseDouble(values[4].trim()); // If needed
 
                     // **Need methods in Project to set these details**
-                    // Example: project.addOrUpdateFlatType(flatType, totalUnits, availableUnits);
-                    // Or directly set fields if Project structure allows (e.g., for 2/3 room)
-                     if ("2-Room".equalsIgnoreCase(flatType)) {
-                         project.setNum2RoomUnits(totalUnits); // Assumes setter exists
-                         project.setAvalNo2Room(availableUnits); // Assumes setter exists
-                     } else if ("3-Room".equalsIgnoreCase(flatType)) {
-                         project.setNum3RoomUnits(totalUnits); // Assumes setter exists
-                         project.setAvalNo3Room(availableUnits); // Assumes setter exists
-                     }
+                    // Using assumed setters based on original comments/Project structure
+                    if ("2-Room".equalsIgnoreCase(flatType)) {
+                        project.setNo2Room(totalUnits);
+                        project.setAvalNo2Room(availableUnits);
+                    } else if ("3-Room".equalsIgnoreCase(flatType)) {
+                        project.setNo3Room(totalUnits);
+                        project.setAvalNo3Room(availableUnits);
+                    } else {
+                         System.err.println("Warning: Unknown flat type '" + flatType + "' for project '" + projectName + "'. Skipping flat info.");
+                         continue; // Skip this flat type
+                    }
                     flatsLoaded++;
+                } else {
+                     System.err.println("Warning: Project '" + projectName + "' not found for flat info. Skipping row.");
                 }
-             } catch (NumberFormatException e) { /* handle error */ }
-             catch (Exception e) { /* handle error */ }
+            } catch (NumberFormatException e) {
+                System.err.println("Error parsing number for project flat row: " + String.join(",", values) + ". Skipping.");
+            } catch (Exception e) {
+                 System.err.println("Unexpected error processing project flat row: " + String.join(",", values));
+                 e.printStackTrace();
+            }
         }
         System.out.println("Loaded flat info for " + flatsLoaded + " entries.");
     }
 
-     /**
-      * Loads officer assignments and adds Officer objects to the corresponding Project objects.
-      * Must be called *after* loadProjectsCore and loadUsers.
-      * @param projects The map of projects loaded by loadProjectsCore.
-      * @param users The map of users loaded by loadUsers.
-      */
-     public void loadProjectOfficers(Map<String, Project> projects, Map<String, User> users) {
-         List<String[]> csvData = readCsvFile(PROJECT_OFFICERS_CSV_PATH);
-         int assignmentsLoaded = 0;
-         // Header: ProjectName[0],OfficerNRIC[1],Status[2]
-         for (String[] values : csvData) {
-             if (values.length < 3) continue;
-             try {
-                 String projectName = values[0];
-                 String officerNric = values[1];
-                 String status = values[2]; // "Approved" or "Pending"
 
-                 Project project = projects.get(projectName);
-                 User user = users.get(officerNric);
+    /**
+     * Loads officer assignments, links Officer objects to Projects, and sets officer status.
+     * Must be called *after* loadProjectsCore and loadUsers.
+     * @param projects The map of projects loaded by loadProjectsCore.
+     * @param users The map of users loaded by loadUsers.
+     */
+    public void loadProjectOfficers(Map<String, Project> projects, Map<String, User> users) throws IOException {
+        List<String[]> csvData = readCsvFile(PROJECT_OFFICERS_CSV_PATH);
+        int assignmentsLoaded = 0;
+        // Header: ProjectName[0],OfficerNRIC[1],Status[2] (Approved | Pending)
 
-                 if (project != null && user instanceof Officer) { // Check if user is actually an Officer
-                     Officer officer = (Officer) user;
-                      // **Need methods in Project to add officers**
-                      // Example: project.addOfficerToLists(officer, status);
-                      // This method in Project would add to arrOfOfficers or pending list based on status
-                      if ("Approved".equalsIgnoreCase(status)) {
-                          project.getArrOfOfficers().add(officer); // Assumes direct access or add method
-                           officer.setStatus(true); // Assuming boolean status in Officer
-                      } else {
-                          // project.getPendingOfficerRegistrations().add(officer); // Assumes method/list exists
-                           officer.setStatus(false);
-                      }
-                      assignmentsLoaded++;
-                 } else if (project!= null && user != null && !"Officer".equalsIgnoreCase(user.getRole())) {
-                     System.err.println("Warning: User " + officerNric + " assigned to project " + projectName + " is not an Officer.");
+        for (String[] values : csvData) {
+            if (values.length < 3) {
+                System.err.println("Skipping malformed project officer row: " + String.join(",", values));
+                continue;
+            }
+            try {
+                String projectName = values[0].trim();
+                String officerNric = values[1].trim();
+                String status = values[2].trim(); // "Approved" or "Pending"
+
+                Project project = projects.get(projectName);
+                User user = users.get(officerNric);
+
+                if (project == null) {
+                     System.err.println("Warning: Project '" + projectName + "' not found for officer assignment. Skipping row.");
+                     continue;
+                }
+                 if (user == null) {
+                      System.err.println("Warning: Officer NRIC '" + officerNric + "' not found in users list for project '" + projectName + "'. Skipping row.");
+                      continue;
                  }
 
-             } catch (Exception e) { /* handle error */ }
-         }
-         System.out.println("Loaded " + assignmentsLoaded + " officer assignments.");
-     }
 
+                if (user instanceof Officer) { // Check if user is actually an Officer
+                    Officer officer = (Officer) user;
+                    boolean isApproved = "Approved".equalsIgnoreCase(status);
 
-     /**
-      * Loads application data and adds Applicant objects to the correct lists within Project objects.
-      * Must be called *after* loadProjectsCore and loadUsers.
-      * @param projects Map of projects loaded by loadProjectsCore.
-      * @param users Map of users loaded by loadUsers.
-      */
-     public void loadApplications(Map<String, Project> projects, Map<String, User> users) {
-         List<String[]> csvData = readCsvFile(APPLICATIONS_CSV_PATH);
-         int appsLoaded = 0;
-         // Header: ApplicantNRIC[0],ProjectName[1],FlatTypeApplied[2],ApplicationStatus[3],WithdrawalStatus[4],HasApplied[5]
-         for (String[] values : csvData) {
-             if (values.length < 6) continue;
-             try {
-                 String applicantNric = values[0];
-                 String projectName = values[1];
-                 String flatTypeApplied = values[2];
-                 String appStatus = values[3]; // "Pending", "Successful", "Unsuccessful", "Withdrawn", "Booked"
-                 boolean withdrawalStatus = Boolean.parseBoolean(values[4]); // True if withdrawal accepted/pending? Check meaning
-                 boolean hasApplied = Boolean.parseBoolean(values[5]); // If they submitted
+                    // **Need methods in Project to add officers**
+                    // Assumes a method like addOfficer(Officer officer, boolean isApproved) exists
+                    // This method in Project would add to the correct list (arrOfOfficers or pending list)
+                     // E.g., project.addOfficer(officer, isApproved); // Hypothetical method
+                     // OR use specific adders if available:
+                     if (isApproved) {
+                          // Assume project.updateArrOfOfficers(officer) adds to approved list if not present
+                          project.updateArrOfOfficers(officer); // Assuming this is the method to add approved officers
+                     } else {
+                          // Assume a method exists to add to a pending list
+                          // project.addPendingOfficer(officer); // Need this method in Project
+                          System.out.println("Note: Logic to add Officer to Project's *pending* list needs implementation in Project class for NRIC " + officerNric);
+                     }
 
-                 Project project = projects.get(projectName);
-                 User user = users.get(applicantNric);
+                    // Also set the status on the Officer object itself
+                    officer.setStatus(isApproved); // Assuming Officer has setStatus(boolean)
 
-                 if (project != null && user instanceof Applicant) {
-                     Applicant applicant = (Applicant) user;
+                    assignmentsLoaded++;
+                } else {
+                    // User exists but is not an Officer
+                    System.err.println("Warning: User '" + officerNric + "' assigned to project '" + projectName + "' is not an Officer (Role: " + user.getRole() + "). Skipping assignment.");
+                }
 
-                     // Update applicant object state based on CSV
-                     applicant.setProject(project); // Assumes setter exists
-                     applicant.setTypeFlat(flatTypeApplied); // Assumes setter exists
-                     applicant.setAppStatus(appStatus); // Assumes setter exists
-                     applicant.setWithdrawalStatus(withdrawalStatus); // Assumes setter exists
-                     applicant.setApplied(hasApplied); // Assumes setter exists
+            } catch (Exception e) {
+                 System.err.println("Unexpected error processing project officer row: " + String.join(",", values));
+                 e.printStackTrace();
+            }
+        }
+        System.out.println("Loaded " + assignmentsLoaded + " officer assignments.");
+    }
 
-                     // Add applicant to the correct list within the project based on status
-                     project.addApplicantToCorrectList(applicant); // **Need this logic in Project**
-                     appsLoaded++;
+    /**
+     * Loads application data, links Applicant objects to Projects, and updates Applicant state.
+     * Must be called *after* loadProjectsCore and loadUsers.
+     * @param projects Map of projects loaded by loadProjectsCore.
+     * @param users Map of users loaded by loadUsers.
+     */
+    public void loadApplications(Map<String, Project> projects, Map<String, User> users) throws IOException {
+        List<String[]> csvData = readCsvFile(APPLICATIONS_CSV_PATH);
+        int appsLoaded = 0;
+        // Header: ApplicantNRIC[0],ProjectName[1],FlatTypeApplied[2],ApplicationStatus[3],WithdrawalStatus[4],HasApplied[5]
 
-                 } else if (project!= null && user != null && !"Applicant".equalsIgnoreCase(user.getRole())) {
-                      System.err.println("Warning: User " + applicantNric + " applying to project " + projectName + " is not an Applicant.");
+        for (String[] values : csvData) {
+            if (values.length < 6) {
+                System.err.println("Skipping malformed application row: " + String.join(",", values));
+                continue;
+            }
+            try {
+                String applicantNric = values[0].trim();
+                String projectName = values[1].trim();
+                String flatTypeApplied = values[2].trim();
+                String appStatus = values[3].trim(); // "Pending", "Successful", "Unsuccessful", "Withdrawn", "Booked"
+                boolean withdrawalStatus = Boolean.parseBoolean(values[4].trim().toLowerCase()); // Check meaning - True if withdrawn/pending withdrawal?
+                boolean hasApplied = Boolean.parseBoolean(values[5].trim().toLowerCase()); // If they submitted
+
+                Project project = projects.get(projectName);
+                User user = users.get(applicantNric);
+
+                 if (project == null) {
+                     System.err.println("Warning: Project '" + projectName + "' not found for application. Skipping row: " + applicantNric);
+                     continue;
                  }
-             } catch (Exception e) { /* handle error */ }
-         }
-          System.out.println("Loaded " + appsLoaded + " applications.");
-     }
+                  if (user == null) {
+                       System.err.println("Warning: Applicant NRIC '" + applicantNric + "' not found in users list for project '" + projectName + "'. Skipping row.");
+                       continue;
+                  }
+
+                if (user instanceof Applicant) {
+                    Applicant applicant = (Applicant) user;
+
+                    // **Update applicant object state based on CSV**
+                    // Assuming setters exist in Applicant class
+                    // applicant.setProject(project); // Link applicant to project object
+                    applicant.setProject(projectName); // Or maybe just store name? Depends on Applicant class design
+                    applicant.setTypeFlat(flatTypeApplied);
+                    applicant.setAppStatus(appStatus);
+                    applicant.setWithdrawalStatus(withdrawalStatus);
+                    applicant.setApplied(hasApplied);
+
+
+                    // **Add applicant to the correct list within the project based on status**
+                    // Needs logic in Project class - e.g., project.addApplicantToCorrectList(applicant);
+                    // This method would look at applicant.getAppStatus() and add to the appropriate list
+                    // (arrOfApplicants, successfulApplicants, unsuccessfulApplicants, bookedApplicants, withdrawRequests)
+                    // Example placeholder call:
+                    project.addApplicantToCorrectList(applicant); // Replace with actual Project method call
+
+                    appsLoaded++;
+                } else {
+                    System.err.println("Warning: User '" + applicantNric + "' applying to project '" + projectName + "' is not an Applicant (Role: " + user.getRole() + "). Skipping application.");
+                }
+            } catch (IllegalArgumentException e) { // Catch potential errors in Boolean.parseBoolean
+                 System.err.println("Error processing application data: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
+             } catch (Exception e) {
+                  System.err.println("Unexpected error processing application row: " + String.join(",", values));
+                  e.printStackTrace();
+            }
+        }
+        System.out.println("Loaded " + appsLoaded + " applications.");
+    }
 
     // --- Add loadEnquiries if needed ---
 
@@ -305,177 +489,290 @@ public class DataManager {
      * Saves all user data back to users.csv.
      * @param users The map of all users (NRIC -> User object).
      */
-    public void saveUsers(Map<String, User> users) {
+    public void saveUsers(Map<String, User> users) throws IOException {
         List<String[]> csvData = new ArrayList<>();
-        String header = "NRIC,Name,Age,MaritalStatus,PasswordHash,Role";
+        // Header defined as constant: USERS_HEADER
+
         for (User user : users.values()) {
-            // Use User.toCsvString() or similar, making sure order matches header
-             csvData.add(new String[] {
-                 escapeCsvField(user.getNric()),
-                 escapeCsvField(user.getName()),
-                 String.valueOf(user.getAge()),
-                 escapeCsvField(user.getMaritalStatus()),
-                 escapeCsvField(user.getPassword()), // Plain text or hash
-                 escapeCsvField(user.getRole())
-             });
+            if (user == null) continue; // Safety check
+            // Use getters to ensure order matches header
+            csvData.add(new String[] {
+                user.getNric(),
+                user.getName(),
+                String.valueOf(user.getAge()),
+                user.getMaritalStatus(),
+                user.getPassword(), 
+                user.getRole()
+            });
         }
-        writeCsvFile(USERS_CSV_PATH, csvData, header);
+        writeCsvFile(USERS_CSV_PATH, csvData, USERS_HEADER);
+         System.out.println("User data saved.");
     }
 
     /**
-     * Saves core project data, flat data, officer assignments, and application data.
-     * Takes the authoritative list of projects as input.
-     * @param projects The list (or map) of all Project objects.
+     * Saves all project-related data (core, flats, officers, applications).
+     * Takes the authoritative map of projects as input.
+     * @param projects The map of all Project objects.
      */
-    public void saveAllProjectData(Map<String, Project> projects) {
+    public void saveAllProjectData(Map<String, Project> projects) throws IOException {
         saveProjectsCore(projects);
         saveProjectFlats(projects);
         saveProjectOfficers(projects);
-        saveApplications(projects); // Assumes Project objects contain all linked Applicants
+        saveApplications(projects);
+        // saveEnquiries(projects); // If needed
         System.out.println("Completed saving all project-related data.");
     }
 
 
     // --- Private helper save methods ---
 
-    private void saveProjectsCore(Map<String, Project> projects) {
+    private void saveProjectsCore(Map<String, Project> projects) throws IOException {
         List<String[]> csvData = new ArrayList<>();
-        String header = "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate";
-        for (Project project : projects.values()) {
-             csvData.add(new String[] {
-                 escapeCsvField(project.getName()),
-                 escapeCsvField(project.getNeighbourhood()),
-                 String.valueOf(project.getVisibility()),
-                 escapeCsvField(project.getCreatorName()),
-                 project.getAppOpeningDate().format(DATE_FORMATTER),
-                 project.getAppClosingDate().format(DATE_FORMATTER)
-             });
-        }
-        writeCsvFile(PROJECTS_CSV_PATH, csvData, header);
-    }
+        // Header defined as constant: PROJECTS_HEADER
 
-    private void saveProjectFlats(Map<String, Project> projects) {
-        List<String[]> csvData = new ArrayList<>();
-        String header = "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice";
         for (Project project : projects.values()) {
-             // **Need logic based on how Project stores flat info**
-             // Example assumes specific 2/3 room getters:
-             if (project.getNum2RoomUnits() > 0) { // Only save if exists
-                 csvData.add(new String[] {
-                     escapeCsvField(project.getName()),
-                     "2-Room",
-                     String.valueOf(project.getNum2RoomUnits()), // Total
-                     String.valueOf(project.getAvalNo2Room()), // Available
-                     "350000" // Need getter for price
-                 });
-             }
-              if (project.getNum3RoomUnits() > 0) { // Only save if exists
-                 csvData.add(new String[] {
-                     escapeCsvField(project.getName()),
-                     "3-Room",
-                     String.valueOf(project.getNum3RoomUnits()), // Total
-                     String.valueOf(project.getAvalNo3Room()), // Available
-                     "450000" // Need getter for price
-                 });
+             if (project == null) continue;
+             try {
+                csvData.add(new String[] {
+                    project.getName(),
+                    project.getNeighbourhood(),
+                    String.valueOf(project.getVisibility()),
+                    project.getCreatorName(),
+                    project.getAppOpeningDate().format(DATE_FORMATTER), // Format dates
+                    project.getAppClosingDate().format(DATE_FORMATTER)
+                });
+             } catch (NullPointerException npe) {
+                  System.err.println("Error saving core data for project: " + (project.getName() != null ? project.getName() : "UNKNOWN") + ". Missing required fields (e.g., dates). Skipping.");
+                  // npe.printStackTrace(); // For debugging
              }
         }
-        writeCsvFile(PROJECT_FLATS_CSV_PATH, csvData, header);
+        writeCsvFile(PROJECTS_CSV_PATH, csvData, PROJECTS_HEADER);
+         System.out.println("Core project data saved.");
     }
 
-    private void saveProjectOfficers(Map<String, Project> projects) {
+    private void saveProjectFlats(Map<String, Project> projects) throws IOException {
         List<String[]> csvData = new ArrayList<>();
-        String header = "ProjectName,OfficerNRIC,Status";
+        // Header defined as constant: FLATS_HEADER
+
         for (Project project : projects.values()) {
-            // Save approved officers
-             for (Officer officer : project.getArrOfOfficers()) { // Assumes getter exists
-                 csvData.add(new String[] {
-                     escapeCsvField(project.getName()),
-                     escapeCsvField(officer.getNric()),
-                     "Approved"
-                 });
-             }
-             // Save pending officers
-              // for (Officer officer : project.getPendingOfficerRegistrations()) { // Assumes getter exists
-              //    csvData.add(new String[] {
-              //        escapeCsvField(project.getName()),
-              //        escapeCsvField(officer.getNric()),
-              //        "Pending"
-              //    });
-              // }
+             if (project == null) continue;
+            // **Need logic based on how Project stores flat info**
+            // Example assumes specific 2/3 room getters:
+            // Assumes getters like getNo2Room(), getAvalNo2Room(), getNo3Room(), getAvalNo3Room() exist
+            // Assumes a placeholder price or a getter like getPrice2Room() / getPrice3Room()
+            try {
+                 if (project.getNo2Room() > 0) { // Only save if 2-room units exist
+                     csvData.add(new String[] {
+                         project.getName(),
+                         "2-Room",
+                         String.valueOf(project.getNo2Room()),
+                         String.valueOf(project.getAvalNo2Room()),
+                         "350000" // Placeholder price - replace with getter if available project.getPrice2Room()
+                     });
+                 }
+                 if (project.getNo3Room() > 0) { // Only save if 3-room units exist
+                     csvData.add(new String[] {
+                         project.getName(),
+                         "3-Room",
+                         String.valueOf(project.getNo3Room()),
+                         String.valueOf(project.getAvalNo3Room()),
+                         "450000" // Placeholder price - replace with getter project.getPrice3Room()
+                     });
+                 }
+            } catch (Exception e) {
+                 System.err.println("Error saving flat data for project: " + project.getName() + ". Skipping project flats.");
+                 e.printStackTrace(); // For debugging
+            }
         }
-        writeCsvFile(PROJECT_OFFICERS_CSV_PATH, csvData, header);
+        writeCsvFile(PROJECT_FLATS_CSV_PATH, csvData, FLATS_HEADER);
+         System.out.println("Project flat data saved.");
     }
 
-     private void saveApplications(Map<String, Project> projects) {
-         List<String[]> csvData = new ArrayList<>();
-         String header = "ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied";
-          // Iterate through all projects and ALL applicant lists within them
-         for (Project project : projects.values()) {
-              // **Need method in Project to get ALL applicants associated with it, regardless of list**
-              // Or iterate through each list (pending, successful, unsuccessful, booked, withdrawRequests)
-             List<Applicant> allProjectApplicants = project.getAllApplicants(); // Assumes this method exists
+    private void saveProjectOfficers(Map<String, Project> projects) throws IOException {
+        List<String[]> csvData = new ArrayList<>();
+        // Header defined as constant: OFFICERS_HEADER
 
-             for (Applicant applicant : allProjectApplicants) {
-                  csvData.add(new String[] {
-                      escapeCsvField(applicant.getNric()),
-                      escapeCsvField(project.getName()), // Project name from the project context
-                      escapeCsvField(applicant.getTypeFlat()),
-                      escapeCsvField(applicant.getAppStatus()),
-                      String.valueOf(applicant.getWithdrawalStatus()),
-                      String.valueOf(applicant.getApplied())
-                  });
+        for (Project project : projects.values()) {
+            if (project == null) continue;
+             try {
+                // Save approved officers
+                // Assumes project.getArrOfOfficers() returns List<Officer> of approved officers
+                List<Officer> approvedOfficers = project.getArrOfOfficers();
+                if (approvedOfficers != null) {
+                    for (Officer officer : approvedOfficers) {
+                        if (officer != null && officer.getNric() != null) { // Null checks
+                             csvData.add(new String[] {
+                                 project.getName(),
+                                 officer.getNric(),
+                                 "Approved"
+                             });
+                        }
+                    }
+                }
+
+                // Save pending officers
+                // Assumes project.getPendingOfficerRegistrations() exists and returns List<Officer>
+                List<Officer> pendingOfficers = project.getPendingOfficerRegistrations(); // Replace with actual method name
+                 if (pendingOfficers != null) {
+                     for (Officer officer : pendingOfficers) {
+                         if (officer != null && officer.getNric() != null) { // Null checks
+                             csvData.add(new String[] {
+                                 project.getName(),
+                                 officer.getNric(),
+                                 "Pending"
+                             });
+                         }
+                     }
+                 }
+             } catch (Exception e) {
+                  System.err.println("Error saving officer data for project: " + project.getName() + ". Skipping project officers.");
+                  e.printStackTrace();
              }
-         }
-         writeCsvFile(APPLICATIONS_CSV_PATH, csvData, header);
-     }
+        }
+        writeCsvFile(PROJECT_OFFICERS_CSV_PATH, csvData, OFFICERS_HEADER);
+         System.out.println("Project officer assignment data saved.");
+    }
 
+
+    private void saveApplications(Map<String, Project> projects) throws IOException {
+        List<String[]> csvData = new ArrayList<>();
+        // Header defined as constant: APPLICATIONS_HEADER
+
+        for (Project project : projects.values()) {
+             if (project == null) continue;
+             try {
+                // **Need method in Project to get ALL applicants associated with it, regardless of list**
+                List<Applicant> allProjectApplicants = project.getAllApplicants();
+                if (allProjectApplicants != null) {
+                    for (Applicant applicant : allProjectApplicants) {
+                        if (applicant == null) continue; // Null check
+                        // Assumes Applicant getters exist: getNric(), getTypeFlat(), getAppStatus(), getWithdrawalStatus(), getApplied()
+                         try {
+                             csvData.add(new String[] {
+                                 applicant.getNric(),
+                                 project.getName(), // Project name from the project context
+                                 applicant.getTypeFlat(),
+                                 applicant.getAppStatus(),
+                                 String.valueOf(applicant.getWithdrawalStatus()),
+                                 String.valueOf(applicant.getApplied())
+                             });
+                         } catch (NullPointerException npe_app) {
+                              System.err.println("Error saving application for applicant: " + (applicant.getNric() != null ? applicant.getNric() : "UNKNOWN") + " in project " + project.getName() + ". Missing required fields. Skipping application.");
+                         }
+                    }
+                }
+             } catch (Exception e) {
+                  System.err.println("Error saving application data for project: " + project.getName() + ". Skipping project applications.");
+                  e.printStackTrace();
+             }
+        }
+        writeCsvFile(APPLICATIONS_CSV_PATH, csvData, APPLICATIONS_HEADER);
+         System.out.println("Application data saved.");
+    }
 
     // --- Add saveEnquiries if needed ---
 
 
     // --- Helper to escape fields for CSV writing ---
     private String escapeCsvField(String field) {
-        if (field == null) return "";
+        if (field == null) return ""; // Represent null as empty string in CSV
+
+        // If field contains comma, quote, or newline, enclose in double quotes
+        // and escape existing double quotes by doubling them ("" -> """")
         if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
             return "\"" + field.replace("\"", "\"\"") + "\"";
         }
+        // Otherwise, return the field as is
         return field;
     }
 
-     // --- Methods to get specific filtered data (as requested by CLI before) ---
-     // These now need to operate on the loaded data (maps/lists)
 
-     public List<Applicant> getAllPendingApplicantsForManager(String managerName, Map<String, Project> allProjects, Map<String, User> allUsers) {
-          List<Applicant> pending = new ArrayList<>();
-          for (Project p : allProjects.values()) {
-              if (managerName.equals(p.getCreatorName())) {
-                   // Assumes Project has a method to get applicants in "Pending" state
-                   pending.addAll(p.getApplicantsByStatus("Pending"));
-              }
-          }
-          return pending;
-     }
+    // === Methods to get specific filtered data (as requested by CLI before) ===
+    // These now operate on the loaded data (maps/lists) passed as arguments
 
-      public List<Officer> getAllPendingOfficersForManager(String managerName, Map<String, Project> allProjects, Map<String, User> allUsers) {
-           List<Officer> pending = new ArrayList<>();
-           for (Project p : allProjects.values()) {
-                if (managerName.equals(p.getCreatorName())) {
-                     // Assumes Project has a method to get officers in "Pending" state
-                     pending.addAll(p.getOfficersByStatus("Pending"));
+    /**
+     * Gets a list of applicants with "Pending" status for projects created by a specific manager.
+     * Assumes Project class has a method getApplicantsByStatus(String status).
+     */
+    public List<Applicant> getAllPendingApplicantsForManager(String managerName,
+                                                             Map<String, Project> allProjects, Map<String, User> allUsers) {
+        List<Applicant> pending = new ArrayList<>();
+        if (managerName == null || allProjects == null) return pending; // Basic null checks
+
+        for (Project p : allProjects.values()) {
+            if (p != null && managerName.equals(p.getCreatorName())) {
+                try {
+                    List<Applicant> projectPending = p.getArrOfApplicants(); // Replace with actual method name
+                    if (projectPending != null) {
+                        pending.addAll(projectPending);
+                    }
+                } catch (UnsupportedOperationException e) {
+                    System.err.println("Error: Project class does not support getApplicantsByStatus. Cannot filter pending applicants for " + p.getName());
+                    // Handle this case - maybe return empty or throw?
+                } catch (Exception e) {
+                    System.err.println("Error retrieving pending applicants for project " + p.getName());
+                    e.printStackTrace();
                 }
-           }
-           return pending;
-      }
+            }
+        }
+        return pending;
+    }
 
-      public List<Applicant> getAllWithdrawalApplicantsForManager(String managerName, Map<String, Project> allProjects, Map<String, User> allUsers) {
-          List<Applicant> withdrawing = new ArrayList<>();
-           for (Project p : allProjects.values()) {
-                if (managerName.equals(p.getCreatorName())) {
-                    withdrawing.addAll(p.getWithdrawReq());
-                }
-           }
-           return withdrawing;
-      }
+    /**
+     * Gets a list of officers with "Pending" status for projects created by a specific manager.
+     * Assumes Project class has a method getOfficersByStatus(String status) or similar.
+     */
+    public List<Officer> getAllPendingOfficersForManager(String managerName,
+                                                         Map<String, Project> allProjects, Map<String, User> allUsers) {
+        List<Officer> pending = new ArrayList<>();
+         if (managerName == null || allProjects == null) return pending;
 
+        for (Project p : allProjects.values()) {
+            if (p != null && managerName.equals(p.getCreatorName())) {
+                // Assumes Project has a method to get *pending* officers
+                // E.g., p.getPendingOfficerRegistrations() used in saving logic
+                 try {
+                     List<Officer> projectPending = p.getPendingOfficerRegistrations(); // Use the same method as in saving
+                     if (projectPending != null) {
+                         pending.addAll(projectPending);
+                     }
+                 } catch (UnsupportedOperationException e) {
+                     System.err.println("Error: Project class does not support getPendingOfficerRegistrations. Cannot filter pending officers for " + p.getName());
+                 } catch (Exception e) {
+                      System.err.println("Error retrieving pending officers for project " + p.getName());
+                      e.printStackTrace();
+                 }
+            }
+        }
+        return pending;
+    }
 
-}
+    /**
+     * Gets a list of applicants who have requested withdrawal for projects created by a specific manager.
+     * Assumes Project class has a method getWithdrawReq().
+     */
+    public List<Applicant> getAllWithdrawalApplicantsForManager(String managerName,
+                                                               Map<String, Project> allProjects, Map<String, User> allUsers) {
+        List<Applicant> withdrawing = new ArrayList<>();
+         if (managerName == null || allProjects == null) return withdrawing;
+
+        for (Project p : allProjects.values()) {
+            if (p != null && managerName.equals(p.getCreatorName())) {
+                // Assumes Project has a method to get applicants requesting withdrawal
+                 try {
+                     List<Applicant> projectWithdrawals = p.getWithdrawReq(); // Assumes this method exists
+                     if (projectWithdrawals != null) {
+                         withdrawing.addAll(projectWithdrawals);
+                     }
+                 } catch (UnsupportedOperationException e) {
+                      System.err.println("Error: Project class does not support getWithdrawReq. Cannot filter withdrawing applicants for " + p.getName());
+                 } catch (Exception e) {
+                       System.err.println("Error retrieving withdrawal applicants for project " + p.getName());
+                       e.printStackTrace();
+                 }
+            }
+        }
+        return withdrawing;
+    }
+
+} 
