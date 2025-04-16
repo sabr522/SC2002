@@ -1,4 +1,4 @@
-pacakage Actors;
+package Actors;
 
 import Actors.User; // Base class
 import Actors.Applicant;
