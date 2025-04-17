@@ -13,8 +13,8 @@ public class Officer extends Applicant {
     private boolean booked = false;
     private List<Project> appliedProjects = new ArrayList<>();
 
-    public Officer(String name, String NRIC, String password, String maritalStatus, int age) {
-    	super(name, NRIC, password, maritalStatus, age);
+    public Officer(String name, String nric, String password, String maritalStatus, int age) {
+        super(name, nric, age, maritalStatus, password, "Officer");
         this.officerApplication = null;
         this.status = false;
     }
@@ -43,7 +43,7 @@ public class Officer extends Applicant {
         this.booked = booked;
     }
     
-    public void registerProject(String projectName, Map<String, Project> allProjectsMap) {
+    public void registerProject(String projectName, Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         if (!allProjectsMap.containsKey(projectName)) {
             System.out.println("Project not found.");
             return;
@@ -56,10 +56,20 @@ public class Officer extends Applicant {
             return;
         }
 
-        LocalDate now = LocalDate.now();
-        if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
-            System.out.println("This project is not open for registration.");
-            return;
+        // LocalDate now = LocalDate.now();
+        // if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
+        //     System.out.println("This project is not open for registration.");
+        //     return;
+        // }
+        
+        User userAsApplicant = allUsersMap.get(this.getNric());
+        if (userAsApplicant instanceof Applicant) {
+             Applicant appSelf = (Applicant) userAsApplicant;
+             // Check if they applied AND the project matches
+             if (appSelf.isApplied() && project.equals(appSelf.getProject())) {
+                 System.out.println("You cannot register as an Officer for a project you have applied to as an Applicant.");
+                 return;
+             }
         }
 
         project.updateArrOfPendingOfficers(this);
