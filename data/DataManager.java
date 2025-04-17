@@ -200,7 +200,7 @@ public class DataManager {
                     case "officer":
                          // Assuming Officer constructor exists: Officer(name, nric, age, maritalStatus, password)
                          // Officer status (approved/pending) is determined later from project_officers.csv
-                        user = new Officer(name, nric, age, maritalStatus, password);
+                    	user = new Officer(name, nric, password, maritalStatus, age);
                          ((Officer)user).setStatus(false); // Default to not approved until checked
                         break;
                     case "applicant":
