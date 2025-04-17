@@ -442,9 +442,8 @@ public class DataManager {
                     Applicant applicant = (Applicant) user;
 
                     // **Update applicant object state based on CSV**
-                    // Assuming setters exist in Applicant class
-                    // applicant.setProject(project); // Link applicant to project object
-                    applicant.setProject(projectName); // Or maybe just store name? Depends on Applicant class design
+                   
+                    applicant.setProject(project);    // Link applicant to project object 
                     applicant.setTypeFlat(flatTypeApplied);
                     applicant.setAppStatus(appStatus);
                     applicant.setWithdrawalStatus(withdrawalStatus);
@@ -634,7 +633,7 @@ public class DataManager {
                 if (allProjectApplicants != null) {
                     for (Applicant applicant : allProjectApplicants) {
                         if (applicant == null) continue; // Null check
-                        // Assumes Applicant getters exist: getNric(), getTypeFlat(), getAppStatus(), getWithdrawalStatus(), getApplied()
+                        
                          try {
                              csvData.add(new String[] {
                                  applicant.getNric(),
@@ -642,7 +641,7 @@ public class DataManager {
                                  applicant.getTypeFlat(),
                                  applicant.getAppStatus(),
                                  String.valueOf(applicant.getWithdrawalStatus()),
-                                 String.valueOf(applicant.getApplied())
+                                 String.valueOf(applicant.isApplied())
                              });
                          } catch (NullPointerException npe_app) {
                               System.err.println("Error saving application for applicant: " + (applicant.getNric() != null ? applicant.getNric() : "UNKNOWN") + " in project " + project.getName() + ". Missing required fields. Skipping application.");
