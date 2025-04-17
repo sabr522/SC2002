@@ -1,6 +1,6 @@
 package Actors;
 
-import Project.Project; // Assuming Project class is in Project package
+import Project.Project; 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,6 @@ public class Manager extends User { // Extend the abstract User class
 
     /**
      * Creates a new project with this manager set as the creator.
-     * IMPORTANT: Assumes the *caller* (e.g., ManagerCLI) has already performed
      * necessary date clash checks against other projects before invoking this method.
      *
      * @param name             Project's name.
@@ -78,7 +77,6 @@ public class Manager extends User { // Extend the abstract User class
 
     /**
      * Edits the details of an existing project.
-     * IMPORTANT: Assumes the *caller* (e.g., ManagerCLI) has already performed necessary date clash checks
      * if dates are being modified, before invoking this method.
      * Checks if the project being edited was actually created by this manager.
      * Allows partial updates; null parameters mean the corresponding field is not updated by this call,
@@ -105,8 +103,8 @@ public class Manager extends User { // Extend the abstract User class
             String updatedNeighbourhood = (neighbourhood != null) ? neighbourhood : projectToEdit.getNeighbourhood();
             LocalDate updatedOpening = (appOpeningDate != null) ? appOpeningDate : projectToEdit.getAppOpeningDate();
             LocalDate updatedClosing = (appClosingDate != null) ? appClosingDate : projectToEdit.getAppClosingDate();
-            int updatedNum2Rooms = (num2Rooms != null) ? num2Rooms : projectToEdit.getNo2Room(); // Assumes getter exists
-            int updatedNum3Rooms = (num3Rooms != null) ? num3Rooms : projectToEdit.getNo3Room(); // Assumes getter exists
+            int updatedNum2Rooms = (num2Rooms != null) ? num2Rooms : projectToEdit.getNo2Room(); 
+            int updatedNum3Rooms = (num3Rooms != null) ? num3Rooms : projectToEdit.getNo3Room(); 
 
 
             // Perform internal clash check *only if dates were actually changed*
@@ -117,20 +115,16 @@ public class Manager extends User { // Extend the abstract User class
                 }
             }
 
-            // Call the setter method in Project (assuming setDetails or individual setters exist)
+            // Call the setter method in Project 
              try {
-                 // Option 1: Assume a single bulk setter exists in Project
-                 // projectToEdit.setDetails(updatedPlaceName, updatedNeighbourhood, updatedOpening, updatedClosing, updatedNum2Rooms, updatedNum3Rooms);
-
-                 // Option 2: Assume individual setters exist in Project
-                 projectToEdit.setName(updatedPlaceName);
-                 projectToEdit.setNeighbourhood(updatedNeighbourhood);
-                 projectToEdit.setAppOpeningDate(updatedOpening);
-                 projectToEdit.setAppClosingDate(updatedClosing);
-                 projectToEdit.setNo2Room(updatedNum2Rooms);
-                 projectToEdit.setAvalNo2Room(updatedNum2Rooms); // Also update available? Or handle separately? Assuming total = available for simplicity here.
-                 projectToEdit.setNo3Room(updatedNum3Rooms);
-                 projectToEdit.setAvalNo3Room(updatedNum3Rooms); // Assuming total = available
+                 projectToEdit.setName(this.name, updatedPlaceName);
+                 projectToEdit.setNeighbourhood(this.name, updatedNeighbourhood);
+                 projectToEdit.setAppOpeningDate(this.name, updatedOpening);
+                 projectToEdit.setAppClosingDate(this.name, updatedClosing);
+                 projectToEdit.setNo2Room(this.name, updatedNum2Rooms);
+                 projectToEdit.setAvalNo2Room(updatedNum2Rooms); 
+                 projectToEdit.setNo3Room(this.name, updatedNum3Rooms);
+                 projectToEdit.setAvalNo3Room(updatedNum3Rooms); 
 
                  return true; // Edit successful
              } catch (Exception e) {
@@ -170,8 +164,6 @@ public class Manager extends User { // Extend the abstract User class
                 continue;
             }
 
-            // Use the Project's own isClashing method
-            // Assumes Project.isClashing(LocalDate start1, LocalDate end1) exists
             if (existingProject.isClashing(appOpeningDate, appClosingDate)) {
                 return true; // Found a clash
             }
@@ -189,9 +181,6 @@ public class Manager extends User { // Extend the abstract User class
     public boolean delProject(Project projectToDelete) {
         // Check ownership using creatorName
         if (projectToDelete != null && this.getName().equals(projectToDelete.getCreatorName())) {
-            // No longer removes from internal list: boolean removed = this.managedProjects.remove(projectToDelete);
-            // The caller (ManagerCLI) is responsible for removing from allProjectsMap.
-            // This method now just confirms ownership for the caller.
             return true; // Indicates manager owns it, caller can proceed with removal
         } else {
              if (projectToDelete == null) {
@@ -213,7 +202,7 @@ public class Manager extends User { // Extend the abstract User class
         // Check ownership using creatorName
         if (projectToToggle != null && this.getName().equals(projectToToggle.getCreatorName())) {
              try {
-                 projectToToggle.setVisibility(!projectToToggle.getVisibility()); // Assumes getter/setter exist
+                 projectToToggle.setVisibility(this.name ,!projectToToggle.getVisibility()); 
                  return true;
              } catch (Exception e) {
                   System.err.println("Error toggling project visibility: " + e.getMessage());
@@ -227,7 +216,7 @@ public class Manager extends User { // Extend the abstract User class
 
     /**
      * Retrieves details for a specific project (typically by calling its display method).
-     * Does not perform ownership check here; assumes caller provides a valid project if needed.
+     * Does not perform ownership check here
      *
      * @param project The project to view.
      * @return String representing project details, or an error message if project is null or view fails.
@@ -235,8 +224,7 @@ public class Manager extends User { // Extend the abstract User class
     public void getProjectDetails(Project project) {
         if (project != null) {
             try {
-                // Assumes Project.viewAllDetails() returns a String or prints details and returns summary/confirmation
-                project.viewAllDetails(); // Assuming this method exists and returns String
+                project.viewAllDetails(); 
             } catch (Exception e) {
                  System.err.println("Error retrieving project details: " + e.getMessage());
                  System.err.println("Error: Could not retrieve details for project " + project.getName());
@@ -254,18 +242,11 @@ public class Manager extends User { // Extend the abstract User class
      * updates the project's lists (removing from pending, potentially adding to approved),
      * and updates the officer's status.
      *
-     * NOTE: This method now requires the full project map to find the relevant project,
-     * or assumes the Officer object knows which project it applied to.
-     * Let's assume the Officer object *doesn't* know, requiring iteration.
-     *
      * @param allProjectsMap    The map of all projects in the system.
      * @param officerToUpdate   The Officer whose registration is being processed.
      * @param approve           True to approve, false to reject.
      * @return true if the officer was found pending in a managed project and processed; false otherwise.
      */
-     // **** DESIGN NOTE: Passing allProjectsMap here is one way to solve the iteration need. ****
-     // **** Another way is for DataManager to return Project context with the Officer, ****
-     // **** or for Officer to store pendingProjectName. This implementation uses the passed map. ****
     public boolean updateRegOfficer(Map<String, Project> allProjectsMap, Officer officerToUpdate, boolean approve) {
         if (officerToUpdate == null) {
             System.err.println("Error: Cannot update registration for a null officer.");
@@ -284,29 +265,24 @@ public class Manager extends User { // Extend the abstract User class
             // Check ownership using creatorName
             if (project != null && this.getName().equals(project.getCreatorName())) {
                  // Check if the officer is in the pending list for this project
-                 // Assumes project.getPendingOfficerRegistrations() exists and returns List<Officer>
-                 // Assumes Officer has proper equals() method (based on NRIC from User class)
-                 List<Officer> pendingList = project.getPendingOfficerRegistrations(); // Replace with actual method
+                 List<Officer> pendingList = project.getPendingOfficerRegistrations(); 
                  if (pendingList != null && pendingList.contains(officerToUpdate)) {
                      try {
-                        // Found the project and officer is pending
-                        pendingList.remove(officerToUpdate); // Assumes remove works correctly
 
                         if (approve) {
-                            // Add to approved list - assumes project.updateArrOfOfficers adds if not present
-                            project.updateArrOfOfficers(officerToUpdate);
+                            // Add to approved list
+                            project.updateArrOfOfficers(this.name, officerToUpdate);
                             System.out.println("Officer '" + officerToUpdate.getName() + "' approved for project '" + project.getName() + "'.");
                         } else {
                             System.out.println("Officer '" + officerToUpdate.getName() + "' registration rejected for project '" + project.getName() + "'.");
                         }
 
-                        officerToUpdate.setStatus(approve); // Update officer's status - assumes setStatus(boolean) exists
+                        officerToUpdate.setStatus(approve); 
                         processed = true;
                         targetProject = project; // Store project for logging/confirmation
                         break; // Process only the first match found
                     } catch (Exception e) {
                          System.err.println("Error processing officer registration for " + officerToUpdate.getName() + " in project " + project.getName() + ": " + e.getMessage());
-                         // Continue searching other projects in case of error? Or return false? Let's return false on error.
                          return false;
                     }
                  }
@@ -333,7 +309,7 @@ public class Manager extends User { // Extend the abstract User class
         // Check ownership using creatorName
         if (project != null && this.getName().equals(project.getCreatorName())) {
             try {
-                List<Officer> approvedOfficers = project.getArrOfOfficers(); // Assumes getter exists
+                List<Officer> approvedOfficers = project.getArrOfOfficers(); 
                 // Return a defensive copy
                 return (approvedOfficers != null) ? new ArrayList<>(approvedOfficers) : new ArrayList<>();
             } catch (Exception e) {
@@ -361,25 +337,13 @@ public class Manager extends User { // Extend the abstract User class
      * @return true if status update was successful, false if failed (e.g., no room, invalid input, not managed).
      */
     public boolean updateApp(Applicant applicant, boolean accept) {
-        if (applicant == null /*|| applicant.getProject() == null*/) { // Assumes applicant stores project info
-             // Need a way for applicant to know its project. Let's assume applicant.getProjectName() exists.
-             if (applicant == null || applicant.getProjectName() == null) {
-                 System.err.println("Error: Invalid applicant or applicant is not associated with a project.");
-                 return false;
-             }
+        if (applicant == null || applicant.getProject() == null) {
+            System.err.println("Error: Invalid applicant or applicant is not associated with a project.");
+            return false;
         }
 
-        // Retrieve the project object from the applicant's stored project name
-        // This requires access to the main project map, or Applicant stores the Project object directly.
-        // Let's assume Applicant only stores the name, and the caller (ManagerCLI) passes the Project object.
-        // **** REVISED SIGNATURE: Pass the project object explicitly ****
-        // public boolean updateApp(Applicant applicant, Project project, boolean accept) {
-        // For now, stick to original signature and assume applicant.getProject() works
-        // Project project = applicant.getProject(); // Requires Applicant.getProject()
-
-        // ** Let's revert to the original logic's assumption that applicant stores Project object **
-        // ** If this is not true, the design needs adjustment **
-         Project project = applicant.getProject(); // ASSUMPTION: Applicant stores the Project object
+        // Retrieve the project object from the applicant
+         Project project = applicant.getProject();
          if (project == null) {
               System.err.println("Error: Applicant " + applicant.getName() + " is not linked to a valid Project object.");
               return false;
@@ -394,10 +358,10 @@ public class Manager extends User { // Extend the abstract User class
         try {
             if (accept) {
                 // Check room availability using the helper method
-                if (hasRoom(project, applicant.getTypeFlat())) { // Assumes applicant.getTypeFlat() exists
-                    // Update project lists - Assumes project.updateSuccessfulApplicants(applicant) exists
+                if (hasRoom(project, applicant.getTypeFlat())) { 
+                    // Update project lists 
                     project.updateSuccessfulApplicants(applicant);
-                    applicant.setAppStatus("Successful"); // Assumes setAppStatus exists
+                    applicant.setAppStatus("Successful"); 
                     System.out.println("Applicant '" + applicant.getName() + "' accepted for project '" + project.getName() + "'.");
                     return true;
                 } else {
@@ -407,10 +371,8 @@ public class Manager extends User { // Extend the abstract User class
             } else {
                 // Rejecting the applicant
                 applicant.setAppStatus("Unsuccessful");
-                // Optional: ensure removal from successful list if previously accepted
-                // Assumes project.removeSuccessfulApplicant(applicant); // May not be needed if lists are managed correctly
                 // Also update the project's list of unsuccessful applicants
-                 project.updateUnsuccessfulApplicants(applicant); // Assumes this method exists
+                 project.updateUnsuccessfulApplicants(applicant); 
                 System.out.println("Applicant '" + applicant.getName() + "' rejected for project '" + project.getName() + "'.");
                 return true; // Rejection is considered a successful status update
             }
@@ -423,7 +385,6 @@ public class Manager extends User { // Extend the abstract User class
 
     /**
      * Helper method to check room availability within a project.
-     * Assumes Project object has getters for available rooms.
      *
      * @param projectApplied The project being applied to.
      * @param flatType       The type of flat ("2-Room" or "3-Room").
@@ -433,12 +394,12 @@ public class Manager extends User { // Extend the abstract User class
         if (projectApplied == null || flatType == null) return false;
         try {
             if ("2-Room".equalsIgnoreCase(flatType)) {
-                return projectApplied.getAvalNo2Room() > 0; // Assumes getter exists
+                return projectApplied.getAvalNo2Room() > 0; 
             } else if ("3-Room".equalsIgnoreCase(flatType)) {
-                return projectApplied.getAvalNo3Room() > 0; // Assumes getter exists
+                return projectApplied.getAvalNo3Room() > 0;
             } else {
                 System.err.println("Warning: Unknown flat type '" + flatType + "' requested for room check in project '" + projectApplied.getName() + "'.");
-                return false; // Unknown type, assume no room
+                return false; 
             }
         } catch (Exception e) {
              System.err.println("Error checking room availability: " + e.getMessage());
@@ -462,12 +423,11 @@ public class Manager extends User { // Extend the abstract User class
             return false;
         }
 
-        // ** Assume applicant.getProject() exists and returns the Project object **
-         Project project = applicant.getProject();
-         if (project == null) {
-              System.err.println("Error: Applicant " + applicant.getName() + " is not linked to a valid Project object for withdrawal.");
-              return false;
-         }
+        Project project = applicant.getProject();
+        if (project == null) {
+            System.err.println("Error: Applicant " + applicant.getName() + " is not linked to a valid Project object for withdrawal.");
+            return false;
+        }
 
         // Check if manager owns the project
         if (!this.getName().equals(project.getCreatorName())) {
@@ -494,21 +454,16 @@ public class Manager extends User { // Extend the abstract User class
     /**
      * Private helper to handle the logic when a withdrawal request is accepted.
      * Updates project lists and applicant status.
-     * Assumes necessary methods exist in Project and Applicant.
      *
      * @param applicant The applicant whose withdrawal is accepted.
      */
     private void handleAcceptWithdraw(Applicant applicant) {
         Objects.requireNonNull(applicant, "Applicant cannot be null for withdrawal acceptance");
-        Project project = applicant.getProject(); // Assumes getter exists
+        Project project = applicant.getProject(); 
 
         if (project != null) {
-             // Add applicant to the project's list of withdrawal requests (or update status if already there)
-             // This might involve moving from successful/booked list to a withdrawn list/status
-             project.updateWithdrawRequests(applicant); // Assumes this method handles list changes correctly
-            // If withdrawal means a room becomes available, increment it.
-            // This logic might be complex depending on whether they were 'Successful' or 'Booked'.
-            // project.incrementRoom(applicant.getTypeFlat()); // Needs careful implementation in Project
+             // Add applicant to the project's list of withdrawal requests 
+             project.updateWithdrawRequests(applicant); 
              System.out.println("Note: Room increment logic upon withdrawal acceptance needs implementation in Project class.");
         } else {
             // This case should ideally be caught earlier, but log warning if it happens.
@@ -522,17 +477,15 @@ public class Manager extends User { // Extend the abstract User class
     /**
      * Private helper to handle the logic when a withdrawal request is rejected.
      * Updates applicant status (remains Successful/Booked) and withdrawal status flag.
-     * Assumes necessary methods exist in Project and Applicant.
      *
      * @param applicant The applicant whose withdrawal is rejected.
      */
     private void handleRejectWithdraw(Applicant applicant) {
         Objects.requireNonNull(applicant, "Applicant cannot be null for withdrawal rejection");
-        Project project = applicant.getProject(); // Assumes getter exists
+        Project project = applicant.getProject(); 
 
         if (project != null) {
             // Remove applicant from the project's list of withdrawal requests
-            // Assumes project.updateWithdrawToUnsuccessful handles this (or similar named method)
              project.updateWithdrawToUnsuccessful(applicant); // Needs to remove from withdrawRequests list
         } else {
             System.err.println("Warning: Applicant '" + applicant.getName() + "' has null project during withdrawal rejection processing.");
@@ -566,8 +519,7 @@ public class Manager extends User { // Extend the abstract User class
         }
 
         // Get the list of successful applicants for this project
-        List<Applicant> applicantsToReport = project.getSuccessfulApplicants(); // Assumes getter exists
-
+        List<Applicant> applicantsToReport = project.getSuccessfulApplicants(); 
         if (applicantsToReport == null || applicantsToReport.isEmpty()) {
             System.out.println("No successful applicants found for project '" + project.getName() + "' to generate a report.");
             return report; // Return empty report
@@ -582,7 +534,7 @@ public class Manager extends User { // Extend the abstract User class
             try {
                 // Prepare data for filtering (handle potential nulls gracefully)
                 String applicantMaritalStatus = Objects.toString(applicant.getMaritalStatus(), "").toLowerCase();
-                String flatType = Objects.toString(applicant.getTypeFlat(), "").toLowerCase(); // Assumes getter exists
+                String flatType = Objects.toString(applicant.getTypeFlat(), "").toLowerCase(); 
 
                 // Apply filters
                 switch (filterKeyLower) {
