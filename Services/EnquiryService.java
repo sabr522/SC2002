@@ -69,21 +69,21 @@ public class EnquiryService {
 		return false;
 	}
 	
-	public boolean replyToEnquiry(int enquiryId, String responder, String content) {
+	public boolean replyToEnquiry(int enquiryId, String responderNRIC, String content) {
 		Enquiry enquiry = enquiryMap.get(enquiryId);
 		if (enquiry != null) {
-			Reply reply = new Reply(enquiry, responder, content);
+			Reply reply = new Reply(enquiry, responderNRIC, content);
 			enquiry.addReply(reply);
 			return true;
 		}
 		return false;
 	}
 	
-	public boolean editReply(int enquiryId, int replyId, String responder, String newContent) {
+	public boolean editReply(int enquiryId, int replyId, String responderNRIC, String newContent) {
 		Enquiry enquiry = enquiryMap.get(enquiryId);
 		if (enquiry != null) {
 			for (Reply reply : enquiry.getReplies()) {
-				if(reply.getId() == replyId && reply.getResponder().equals(responder)) {
+				if(reply.getId() == replyId && reply.getResponderNRIC().equals(responderNRIC)) {
 					reply.setContent(newContent);
 					return true;
 				}
