@@ -3,6 +3,7 @@ package main; // Assuming your MainApp is in the 'main' package
 import cli.LoginCLI;
 // Keep necessary imports for MainApp's remaining responsibilities
 import cli.ManagerCLI;
+import cli.OfficerCLI;
 // import cli.OfficerCLI; // Keep commented for now
 import cli.ApplicantCLI; 
 import data.DataManager;
@@ -176,7 +177,18 @@ public class MainApp {
                     } else { System.err.println("Error: Role/Type mismatch for Manager."); }
                     break;
                 case "officer":
-                    // TODO: !!implement officer based UI!!
+                	if (user instanceof Officer) {
+                        OfficerCLI officerCLI = new OfficerCLI(
+                            (Officer) user,
+                            scanner,
+                            dataManager,
+                            allProjectsMap,
+                            allUsersMap
+                        );
+                        officerCLI.showOfficerMenu();
+                    } else {
+                        System.err.println("Error: Role/Type mismatch for Officer.");
+                    }
                     System.out.println("Officer role access is currently disabled in MainApp."); // Keep commented out
                     break;
                 case "applicant":
