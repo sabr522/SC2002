@@ -3,6 +3,7 @@ package Actors;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import Project.Project;
 
@@ -12,11 +13,10 @@ public class Officer extends Applicant {
     private boolean booked = false;
     private List<Project> appliedProjects = new ArrayList<>();
 
-    public Officer(String name, String NRIC, String password, String maritalStatus, int age,
-            String citizenApplication, String officerApplication, boolean status) {
+    public Officer(String name, String NRIC, String password, String maritalStatus, int age) {
     	super(name, NRIC, password, maritalStatus, age);
 	 this.officerApplication = null;
-	 this.status = status;
+	 this.status = false;
 }
 
 
@@ -44,28 +44,29 @@ public class Officer extends Applicant {
         this.booked = booked;
     }
     
-	public void registerProject(String projectName) {
-	    for (Project project : Project.getAllProjects()) {
-	        if (project.getName().equals(projectName)) {
-	        	if (this.officerApplication != null) {
-	                System.out.println("Already registered as an officer for another project.");
-	                return;
-	            }
+    public void registerProject(String projectName, Map<String, Project> allProjectsMap) {
+        if (!allProjectsMap.containsKey(projectName)) {
+            System.out.println("Project not found.");
+            return;
+        }
 
-	            LocalDate now = LocalDate.now();
-	            if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
-	                System.out.println("This project is not open for registration.");
-	                return;
-	            }
+        Project project = allProjectsMap.get(projectName);
 
-	            project.updateArrOfPendingOfficers(this);
-	            this.appliedProjects.add(project);
-	            System.out.println("Registered for project as officer (pending approval).");
-	            return;
-	        }
-	    }
-	    System.out.println("Project not found.");
-	}
+        if (this.officerApplication != null) {
+            System.out.println("Already registered as an officer for another project.");
+            return;
+        }
+
+        LocalDate now = LocalDate.now();
+        if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
+            System.out.println("This project is not open for registration.");
+            return;
+        }
+
+        project.updateArrOfPendingOfficers(this);
+        this.appliedProjects.add(project);
+        System.out.println("Registered for project as officer (pending approval).");
+    }
     
     public void showProfile() {
         if (status && officerApplication != null) {
