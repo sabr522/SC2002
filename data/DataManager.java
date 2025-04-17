@@ -2,10 +2,13 @@ package data;
 
 import Actors.User;
 import Actors.Applicant;
+import Actors.Enquiry;
 import Actors.Manager;
 import Actors.Officer;
+import Actors.Reply;
 import Project.Project;
 // Add imports for Enquiry if needed
+import Services.EnquiryService;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +34,8 @@ public class DataManager {
     private static final String PROJECT_FLATS_CSV_PATH = DATA_FOLDER + "/project_flats.csv";
     private static final String PROJECT_OFFICERS_CSV_PATH = DATA_FOLDER + "/project_officers.csv";
     private static final String APPLICATIONS_CSV_PATH = DATA_FOLDER + "/applications.csv";
-    // private static final String ENQUIRIES_CSV_PATH = DATA_FOLDER + "/enquiries.csv"; // If needed
+    private static final String ENQUIRIES_CSV_PATH = DATA_FOLDER + "/enquiries.csv"; 
+    private static final String REPLIES_CSV_PATH = DATA_FOLDER + "/replies.csv";     
 
     // Consistent date formatter
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // YYYY-MM-DD
@@ -42,8 +46,8 @@ public class DataManager {
     private static final String FLATS_HEADER = "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice"; // Added SellingPrice for completeness
     private static final String OFFICERS_HEADER = "ProjectName,OfficerNRIC,Status"; // Status: Approved | Pending
     private static final String APPLICATIONS_HEADER = "ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied"; // Status: Pending | Successful | Unsuccessful | Withdrawn | Booked
-    // private static final String ENQUIRIES_HEADER = "EnquiryID,SubmitterNRIC,ProjectName,EnquiryText,ReplyText,Status"; // If needed
-
+    private static final String ENQUIRIES_HEADER = "EnquiryID,SubmitterNRIC,ProjectName,EnquiryContent"; 
+    private static final String REPLIES_HEADER = "EnquiryID,ReplyID,ResponderNRIC,ReplyContent"; 
 
     // --- Constructor ---
     public DataManager() {
@@ -53,7 +57,8 @@ public class DataManager {
         ensureFileExists(PROJECT_FLATS_CSV_PATH, FLATS_HEADER);
         ensureFileExists(PROJECT_OFFICERS_CSV_PATH, OFFICERS_HEADER);
         ensureFileExists(APPLICATIONS_CSV_PATH, APPLICATIONS_HEADER);
-        // ensureFileExists(ENQUIRIES_CSV_PATH, ENQUIRIES_HEADER); // If needed
+        ensureFileExists(ENQUIRIES_CSV_PATH, ENQUIRIES_HEADER); 
+        ensureFileExists(REPLIES_CSV_PATH, REPLIES_HEADER);
     }
 
     // --- File Existence Check ---
@@ -194,11 +199,10 @@ public class DataManager {
                 User user = null;
                 switch (role.toLowerCase()) {
                     case "manager":
-                        // Use the updated Manager constructor (without initialProjects)
-                        user = new Manager(name, nric, age, maritalStatus, password);
+                        // Use the updated Manager constructor 
+                        user = new Manager(name, nric, password, maritalStatus, age);
                         break;
                     case "officer":
-                         // Assuming Officer constructor exists: Officer(name, nric, age, maritalStatus, password)
                          // Officer status (approved/pending) is determined later from project_officers.csv
                     	user = new Officer(name, nric, password, maritalStatus, age);
                          ((Officer)user).setStatus(false); // Default to not approved until checked
@@ -465,7 +469,67 @@ public class DataManager {
         System.out.println("Loaded " + appsLoaded + " applications.");
     }
 
-    // --- Add loadEnquiries if needed ---
+    /**
+     * Loads Enquiries and their Replies from CSV files.
+     * Populates the passed EnquiryService instance.
+     * Resets static ID counters in Enquiry and Reply classes.
+     * @param enquiryService The EnquiryService to populate.
+     */
+    public void loadEnquiries(EnquiryService enquiryService) throws IOException {
+        if (enquiryService == null) {
+            System.err.println("EnquiryService is null, cannot load enquiries.");
+            return;
+        }
+        Map<Integer, Enquiry> loadedEnquiries = new HashMap<>(); // Temp map
+
+        // 1. Load Enquiries
+        List<String[]> enquiryData = readCsvFile(ENQUIRIES_CSV_PATH);
+        int maxEnquiryId = 0;
+        System.out.println("Reading " + enquiryData.size() + " enquiry rows...");
+        for (String[] values : enquiryData) {
+            if (values.length < 4) continue;
+            try {
+                int enquiryId = Integer.parseInt(values[0].trim());
+                String submitterNric = values[1].trim();
+                String projectName = values[2].trim();
+                String content = values[3].trim(); // Assuming content is not escaped complexly
+
+                Enquiry enquiry = new Enquiry(submitterNric, content, projectName, enquiryId); // Use loading constructor
+                loadedEnquiries.put(enquiryId, enquiry);
+                if (enquiryId > maxEnquiryId) maxEnquiryId = enquiryId;
+
+            } catch (Exception e) { System.err.println("Error processing enquiry row: " + String.join(",", values) + " -> " + e.getMessage()); }
+        }
+        Enquiry.resetIdCounter(maxEnquiryId); // Reset static counter
+
+        // 2. Load Replies
+        List<String[]> replyData = readCsvFile(REPLIES_CSV_PATH);
+        int repliesLoaded = 0;
+        Map<Integer, Integer> replyCounters = new HashMap<>(); // Max reply ID per enquiry
+        System.out.println("Reading " + replyData.size() + " reply rows...");
+        for (String[] values : replyData) {
+            if (values.length < 4) continue;
+            try {
+                int enquiryId = Integer.parseInt(values[0].trim());
+                int replyId = Integer.parseInt(values[1].trim());
+                String responderNric = values[2].trim();
+                String content = values[3].trim(); // Assuming simple content
+
+                Enquiry parentEnquiry = loadedEnquiries.get(enquiryId);
+                if (parentEnquiry != null) {
+                    Reply reply = new Reply(parentEnquiry, responderNric, content, replyId); // Use loading constructor
+                    parentEnquiry.addReply(reply);
+                    repliesLoaded++;
+                    replyCounters.put(enquiryId, Math.max(replyCounters.getOrDefault(enquiryId, 0), replyId));
+                } else System.err.println("Warning: Cannot load reply - parent enquiry ID " + enquiryId + " not found.");
+            } catch (Exception e) { System.err.println("Error processing reply row: " + String.join(",", values) + " -> " + e.getMessage()); }
+        }
+        Reply.resetIdCounters(replyCounters); // Reset static counters
+
+        // 3. Populate Service
+        enquiryService.loadExistingEnquiries(loadedEnquiries); // Add method to EnquiryService
+        System.out.println("Loaded " + loadedEnquiries.size() + " enquiries and " + repliesLoaded + " replies into service.");
+    }
 
 
     // === Saving Methods ===
@@ -504,7 +568,6 @@ public class DataManager {
         saveProjectFlats(projects);
         saveProjectOfficers(projects);
         saveApplications(projects);
-        // saveEnquiries(projects); // If needed
         System.out.println("Completed saving all project-related data.");
     }
 
@@ -655,7 +718,52 @@ public class DataManager {
          System.out.println("Application data saved.");
     }
 
-    // --- Add saveEnquiries if needed ---
+    /**
+     * Saves all Enquiries and their Replies to CSV files.
+     * Retrieves data from the EnquiryService.
+     * @param enquiryService The service holding the enquiry data.
+     */
+    public void saveEnquiries(EnquiryService enquiryService) throws IOException {
+        if (enquiryService == null) {
+            System.err.println("EnquiryService is null, cannot save enquiries.");
+            return;
+        }
+
+        List<String[]> enquiryCsvData = new ArrayList<>();
+        List<String[]> replyCsvData = new ArrayList<>();
+
+        List<Enquiry> allEnquiries = enquiryService.getAllEnquiries(); 
+
+        for (Enquiry enquiry : allEnquiries) {
+            if (enquiry == null) continue;
+            // Save enquiry data (Order matches ENQUIRIES_HEADER)
+            enquiryCsvData.add(new String[] {
+                String.valueOf(enquiry.getId()),
+                enquiry.getApplicantNRIC(),
+                enquiry.getProject(),
+                enquiry.getContent() // Content for enquiry itself
+            });
+
+            // Save associated replies (Order matches REPLIES_HEADER)
+            List<Reply> replies = enquiry.getReplies();
+            if (replies != null) {
+                for (Reply reply : replies) {
+                    if (reply != null) {
+                        replyCsvData.add(new String[] {
+                            String.valueOf(enquiry.getId()), // Link back to enquiry
+                            String.valueOf(reply.getId()),
+                            reply.getResponderNRIC(),
+                            reply.getContent() // Content for reply
+                        });
+                    }
+                }
+            }
+        }
+
+        writeCsvFile(ENQUIRIES_CSV_PATH, enquiryCsvData, ENQUIRIES_HEADER);
+        writeCsvFile(REPLIES_CSV_PATH, replyCsvData, REPLIES_HEADER);
+        System.out.println("Enquiry and Reply data saved.");
+    }
 
 
     // --- Helper to escape fields for CSV writing ---
