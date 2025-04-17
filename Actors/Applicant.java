@@ -34,6 +34,10 @@ public class Applicant extends User implements ApplicantRole {
     public String getAppStatus() {
     	return appStatus;
     }
+
+    public boolean getWithdrawalStatus() {
+        return WithdrawStatus;
+    }
     
     public boolean isApplied() { 
     	return applied; 
