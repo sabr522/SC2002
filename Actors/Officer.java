@@ -12,12 +12,14 @@ public class Officer extends Applicant {
     private boolean status;
     private boolean booked = false;
     private List<Project> appliedProjects = new ArrayList<>();
+    private List<Project> futureProjects = new ArrayList<>();
 
     public Officer(String name, String NRIC, String password, String maritalStatus, int age) {
     	super(name, NRIC, password, maritalStatus, age);
-        this.officerApplication = null;
-        this.status = false;
-    }
+    	this.officerApplication = null;
+    	this.status = false;
+}
+
 
     public Project getOfficerApplication() {
         return officerApplication;
@@ -49,22 +51,29 @@ public class Officer extends Applicant {
             return;
         }
 
-        Project project = allProjectsMap.get(projectName);
-
-        if (this.officerApplication != null) {
-            System.out.println("Already registered as an officer for another project.");
-            return;
-        }
+        Project newProject = allProjectsMap.get(projectName);
 
         LocalDate now = LocalDate.now();
-        if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
-            System.out.println("This project is not open for registration.");
+        if (now.isBefore(newProject.getAppOpeningDate()) || now.isAfter(newProject.getAppClosingDate())) {
+            System.out.println("This project is not open for officer registration.");
             return;
         }
 
-        project.updateArrOfPendingOfficers(this);
-        this.appliedProjects.add(project);
-        System.out.println("Registered for project as officer (pending approval).");
+        if (appliedProjects.contains(newProject)) {
+            System.out.println("You have already applied for this project.");
+            return;
+        }
+
+        for (Project p : futureProjects) {
+            if (p.isClashing(newProject.getAppOpeningDate(), newProject.getAppClosingDate())) {
+                System.out.println("Cannot apply. This project's dates overlap with: " + p.getName());
+                return;
+            }
+        }
+
+        newProject.updateArrOfPendingOfficers(this);
+        appliedProjects.add(newProject);
+        System.out.println("Registered for project as officer (pending approval): " + newProject.getName());
     }
     
     public void showProfile() {

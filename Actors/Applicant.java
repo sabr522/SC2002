@@ -11,20 +11,35 @@ import java.util.Map;
 public class Applicant extends User implements ApplicantRole {
 	
     private Project project;
-    private String TypeFlat;
+    private String typeFlat;
     private String appStatus;
     private boolean applied = false;
-    private boolean WithdrawStatus = false;
+    private boolean withdrawStatus = false;
     
-    
-    public Applicant(String name, String nric, String password, String maritalStatus, int age) {
-        super(name, nric, age, maritalStatus, password, "Applicant");
-        this.appStatus= "Null";
-        this.TypeFlat= "Null";    
+
+    /**
+     * Protected constructor for subclasses (like Officer) to pass the correct role up.
+     */
+    protected Applicant(String name, String nric, int age, String maritalStatus, String password, String role) {
+        super(name, nric, age, maritalStatus, password, role); // Pass the role up
+        // Initialize fields to default states
+        this.project = null;
+        this.appStatus = null; // No status initially
+        this.typeFlat = null; // No flat type initially
+        this.applied = false;
+        this.withdrawStatus = false;
+    }
+
+    /**
+     * Public constructor specifically for creating Applicant instances.
+     * Calls the protected constructor with the role "Applicant".
+     */
+    public Applicant(String name, String nric, int age, String maritalStatus, String password) {
+        this(name, nric, age, maritalStatus, password, "Applicant"); // Call protected constructor with role
     }
     
     public String getTypeFlat() {
-    	return TypeFlat;
+    	return typeFlat;
     }
     
     public Project getProject() {
@@ -36,7 +51,7 @@ public class Applicant extends User implements ApplicantRole {
     }
 
     public boolean getWithdrawalStatus() {
-        return WithdrawStatus;
+        return withdrawStatus;
     }
     
     public boolean isApplied() { 
@@ -56,16 +71,16 @@ public class Applicant extends User implements ApplicantRole {
     	   this.project = project; 
     }
     
-    public void setWithdrawalStatus(boolean WithdrawStatus) {
-    	this.WithdrawStatus = WithdrawStatus;
+    public void setWithdrawalStatus(boolean withdrawStatus) {
+    	this.withdrawStatus = withdrawStatus;
     }
     
 
-    public void setTypeFlat(String TypeFlat) {
-        if (!TypeFlat.equals("2-Room") && !TypeFlat.equals("3-Room")) 
+    public void setTypeFlat(String typeFlat) {
+        if (!typeFlat.equals("2-Room") && !typeFlat.equals("3-Room")) 
             throw new IllegalArgumentException("Flat type must be either '2-Room' or '3-Room'");
         
-        this.TypeFlat = TypeFlat;
+        this.typeFlat = typeFlat;
     }
     
    
@@ -164,14 +179,14 @@ public class Applicant extends User implements ApplicantRole {
 
         // update
         
-        setTypeFlat(chosenFlatType);  // sets & handles the validation
+        settypeFlat(chosenFlatType);  // sets & handles the validation
         setProject(selectedProject);  // Set the selected project
         setAppStatus("Pending");      // Set to default application status 
         setApplied(true);             // Mark the applicant as having applied
 
         selectedProject.updateArrOfApplicants(this); 
         
-        System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.TypeFlat + " flat).");
+        System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.typeFlat + " flat).");
     }
         
     
@@ -199,7 +214,7 @@ public class Applicant extends User implements ApplicantRole {
     
     public void withdrawApp() {
         if (this.applied && (this.appStatus.equals("Successful") || this.appStatus.equals("Booked"))) {
-            if (this.WithdrawStatus) {
+            if (this.withdrawStatus) {
                 System.out.println(this.getName() + " has already requested a withdrawal.");
                 return;
             }
