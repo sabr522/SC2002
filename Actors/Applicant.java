@@ -34,6 +34,10 @@ public class Applicant extends User implements ApplicantRole {
     	return project;
     }
     
+    public String getAppStatus(){
+        return appStatus;
+    }
+
     public boolean isApplied() { 
     	return applied; 
     }
