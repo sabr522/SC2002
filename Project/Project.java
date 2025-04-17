@@ -275,9 +275,9 @@ public class Project {
 	}
 	
 	public void updateSuccessfulApplicants(Applicant applicant) {
-		if (applicant != null && applicant.getNRIC() != null) { 
-			String targetNRIC=applicant.getNRIC();
-			if (arrOfApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		if (applicant != null && applicant.getNric() != null) { 
+			String targetNRIC=applicant.getNric();
+			if (arrOfApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.successfulApplicants.add(applicant);
 			}
@@ -285,9 +285,9 @@ public class Project {
 	}
 	
 	public void updateUnsuccessfulApplicants(Applicant applicant) {
-		if (applicant != null && applicant.getNRIC() != null) { 
-			String targetNRIC=applicant.getNRIC();
-			if (arrOfApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		if (applicant != null && applicant.getNric() != null) { 
+			String targetNRIC=applicant.getNric();
+			if (arrOfApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.unsuccessfulApplicants.add(applicant);
 			}
@@ -295,9 +295,9 @@ public class Project {
 	}
 	
 	public void updateBookedApplicants(Applicant applicant) {
-		if (applicant != null && applicant.getNRIC() != null) { 
-			String targetNRIC=applicant.getNRIC();
-			if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		if (applicant != null && applicant.getNric() != null) { 
+			String targetNRIC=applicant.getNric();
+			if (successfulApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.bookedApplicants.add(applicant);
 				if (applicant.getTypeFlat().equals("2Room")){
@@ -312,14 +312,14 @@ public class Project {
 	
 	
 	public void updateWithdrawRequests(Applicant applicant) {
-		if (applicant != null && applicant.getNRIC() != null) { 
-			String targetNRIC=applicant.getNRIC();
-			if (successfulApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		if (applicant != null && applicant.getNric() != null) { 
+			String targetNRIC=applicant.getNric();
+			if (successfulApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.withdrawRequests.add(applicant);
 			}
 
-			else if (bookedApplicants.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+			else if (bookedApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.withdrawRequests.add(applicant);
 				if (applicant.getTypeFlat().equals("2Room")){
@@ -333,9 +333,9 @@ public class Project {
 	}
 	
 	public void updateWithdrawToUnsuccessful(Applicant applicant) {
-		if (applicant != null && applicant.getNRIC() != null) { 
-			String targetNRIC=applicant.getNRIC();
-			if (withdrawRequests.removeIf(a -> a.getNRIC().equals(targetNRIC)))
+		if (applicant != null && applicant.getNric() != null) { 
+			String targetNRIC=applicant.getNric();
+			if (withdrawRequests.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.unsuccessfulApplicants.add(applicant);
 			}	
