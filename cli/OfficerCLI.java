@@ -18,7 +18,7 @@ public class OfficerCLI {
     private Map<String, User> allUsersMap;
     private EnquiryService enquiryService;
 
-    public OfficerCLI(Officer officer, Scanner scanner, DataManager dataManager,
+    public OfficerCLI(Officer officer, Scanner scanner, DataManager dataManager, EnquiryService enquiryService,
                       Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         this.officer = officer;
         this.scanner = scanner;
@@ -79,7 +79,7 @@ public class OfficerCLI {
         System.out.print("Enter Project Name to register: ");
         String projectName = scanner.nextLine();
 
-        officer.registerProject(projectName, allProjectsMap);
+        officer.registerProject(projectName, allProjectsMap, allUsersMap);
     }
 
     private void showOfficerProfile() {

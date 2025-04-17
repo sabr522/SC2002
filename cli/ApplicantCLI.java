@@ -23,7 +23,7 @@ public class ApplicantCLI {
     private Applicant applicant;
     private Scanner scanner;
     private DataManager dataManager;
-    private EnquiryService enquiryService;
+    private final EnquiryService enquiryService;
     private final Map<String, Project> allProjectsMap;
 
  

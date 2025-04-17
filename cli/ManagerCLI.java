@@ -5,7 +5,8 @@ import Actors.User; // Needed for type casting or methods accepting User
 import Actors.Applicant;
 import Actors.Officer;
 import Project.Project;
-// import cli.EnquiryCLI; // Assumes EnquiryCLI is in this package - Kept commented
+import Services.EnquiryService;
+import cli.EnquiryCLI; 
 import data.DataManager;
 
 import java.time.LocalDate;
@@ -31,7 +32,7 @@ public class ManagerCLI {
     private final Manager manager; // The specific Manager logic object for this session
     private final Scanner scanner;
     private final DataManager dataManager; // Instance to interact with data layer helpers
-    //private final EnquiryCLI enquiryCLI; // Instance for handling enquiry UI flows - Kept commented
+    private final EnquiryService enquiryService; // Instance for handling enquiry UI flows
 
     // References to the main application data maps, loaded at startup
     private final Map<String, Project> allProjectsMap;
@@ -43,18 +44,18 @@ public class ManagerCLI {
      * @param manager        The logged-in Manager object (contains user info and logic).
      * @param scanner        The Scanner instance for reading user input.
      * @param dataManager    The DataManager instance for fetching data.
+     * @param enquiryService Main logic for holding all enquires/replies
      * @param allProjectsMap A reference to the Map holding all loaded Project objects.
      * @param allUsersMap    A reference to the Map holding all loaded User objects.
      */
-    public ManagerCLI(Manager manager, Scanner scanner, DataManager dataManager,
+    public ManagerCLI(Manager manager, Scanner scanner, DataManager dataManager, EnquiryService enquiryService,
                       Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         this.manager = manager;
         this.scanner = scanner;
         this.dataManager = dataManager;
+        this.enquiryService = enquiryService; 
         this.allProjectsMap = allProjectsMap;
         this.allUsersMap = allUsersMap;
-        // Pass the scanner to EnquiryCLI if its constructor needs it
-        // this.enquiryCLI = new EnquiryCLI(scanner); // Kept commented
     }
 
     /**
@@ -75,7 +76,7 @@ public class ManagerCLI {
             System.out.println("6. Accept/Reject Applicant Application");
             System.out.println("7. Accept/Reject Applicant Withdrawal");
             System.out.println("8. Generate Applicant Report");
-            System.out.println("9. Handle Enquiries"); // Still points to commented code
+            System.out.println("9. Handle Enquiries"); 
             System.out.println("0. Logout");
             System.out.print("Enter choice: ");
 
@@ -94,7 +95,10 @@ public class ManagerCLI {
                     case 9:
                         System.out.println("Enquiry handling not implemented in this CLI.");
                         // Pass the Manager object (which is a User) to the EnquiryCLI
-                        // enquiryCLI.showEnquiryMenuForStaff(this.manager); // Kept commented
+
+                        // TODO: Fix up enquiryCLI for manager
+                        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, manager.getNric(), true, true);
+                        enquiryCLI.showEnquiryMenu();
                         break;
                     case 0:
                         System.out.println("Preparing to logout manager " + manager.getName() + "...");
@@ -105,8 +109,7 @@ public class ManagerCLI {
                 }
             } catch (Exception e) {
                 System.err.println("An unexpected error occurred during the action: " + e.getMessage());
-                 e.printStackTrace(); // Good for debugging
-                // log the stack trace for debugging: e.printStackTrace();
+                 e.printStackTrace(); 
             }
 
         } while (choice != 0);
