@@ -375,18 +375,16 @@ public class DataManager {
                 if (user instanceof Officer) { // Check if user is actually an Officer
                     Officer officer = (Officer) user;
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
-
                     
-                     if (isApproved) {
-                          project.updateArrOfOfficers(project.getCreatorName(), officer); //Adds approved officers 
-                     } else {
+                    if (isApproved) {
+                        project.updateArrOfOfficers(project.getCreatorName(), officer); //Adds approved officers 
+                    } else {
                         project.updateArrOfPendingOfficers(officer); //Adds pending officers
-                          
-                          System.out.println("Note: Logic to add Officer to Project's *pending* list needs implementation in Project class for NRIC " + officerNric);
-                     }
+                        System.out.println("Note: Logic to add Officer to Project's *pending* list needs implementation in Project class for NRIC " + officerNric);
+                    }
 
                     // Also set the status on the Officer object itself
-                    officer.setStatus(isApproved); // Assuming Officer has setStatus(boolean)
+                    officer.setStatus(isApproved);
 
                     assignmentsLoaded++;
                 } else {
