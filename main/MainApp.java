@@ -3,7 +3,7 @@ package main; // Assuming your MainApp is in the 'main' package
 // Keep necessary imports for MainApp's remaining responsibilities
 import cli.ManagerCLI;
 // import cli.OfficerCLI; // Keep commented for now
-// import cli.ApplicantCLI; // Keep commented for now
+import cli.ApplicantCLI; 
 import data.DataManager;
 import Actors.User;
 import Actors.Manager;
@@ -203,8 +203,10 @@ public class MainApp {
                     System.out.println("Officer role access is currently disabled in MainApp."); // Keep commented out
                     break;
                 case "applicant":
-                    // TODO: implement applicant based UI!!
-                     System.out.println("Applicant role access is currently disabled in MainApp."); // Keep commented out
+                    if (user instanceof Manager) {
+                        ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, scanner, enquiryService, dataManager, allProjectsMap);
+                        applicantCLI.showApplicantMenu();
+                    } else { System.err.println("Error: Role/Type mismatch for Applicant."); }
                     break;
                 default:
                     System.err.println("Error: Unknown user role: " + user.getRole());
