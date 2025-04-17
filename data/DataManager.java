@@ -204,9 +204,8 @@ public class DataManager {
                          ((Officer)user).setStatus(false); // Default to not approved until checked
                         break;
                     case "applicant":
-                         // Assuming Applicant constructor exists: Applicant(name, nric, age, maritalStatus, password)
-                         // Application details (project, status, etc.) loaded later from applications.csv
-                        user = new Applicant(name, nric, age, maritalStatus, password);
+                        // Application details (project, status, etc.) loaded later from applications.csv
+                        user = new Applicant(name, nric, password, maritalStatus, age);
                         break;
                     default:
                         System.err.println("Warning: Invalid role '" + role + "' found for NRIC " + nric + ". Skipping user.");
