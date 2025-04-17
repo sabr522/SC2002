@@ -15,10 +15,9 @@ public class Officer extends Applicant {
 
     public Officer(String name, String NRIC, String password, String maritalStatus, int age) {
     	super(name, NRIC, password, maritalStatus, age);
-	 this.officerApplication = null;
-	 this.status = false;
-}
-
+        this.officerApplication = null;
+        this.status = false;
+    }
 
     public Project getOfficerApplication() {
         return officerApplication;
