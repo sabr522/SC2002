@@ -314,13 +314,11 @@ public class DataManager {
                     int availableUnits = Integer.parseInt(values[3].trim());
                     // double sellingPrice = Double.parseDouble(values[4].trim()); // If needed
 
-                    // **Need methods in Project to set these details**
-                    // Using assumed setters based on original comments/Project structure
                     if ("2-Room".equalsIgnoreCase(flatType)) {
-                        project.setNo2Room(totalUnits);
+                        project.setNo2Room(project.getCreatorName(), totalUnits);
                         project.setAvalNo2Room(availableUnits);
                     } else if ("3-Room".equalsIgnoreCase(flatType)) {
-                        project.setNo3Room(totalUnits);
+                        project.setNo3Room(project.getCreatorName(),totalUnits);
                         project.setAvalNo3Room(availableUnits);
                     } else {
                          System.err.println("Warning: Unknown flat type '" + flatType + "' for project '" + projectName + "'. Skipping flat info.");
@@ -379,17 +377,12 @@ public class DataManager {
                     Officer officer = (Officer) user;
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
 
-                    // **Need methods in Project to add officers**
-                    // Assumes a method like addOfficer(Officer officer, boolean isApproved) exists
-                    // This method in Project would add to the correct list (arrOfOfficers or pending list)
-                     // E.g., project.addOfficer(officer, isApproved); // Hypothetical method
-                     // OR use specific adders if available:
+                    
                      if (isApproved) {
-                          // Assume project.updateArrOfOfficers(officer) adds to approved list if not present
-                          project.updateArrOfOfficers(officer); // Assuming this is the method to add approved officers
+                          project.updateArrOfOfficers(project.getCreatorName(), officer); //Adds approved officers 
                      } else {
-                          // Assume a method exists to add to a pending list
-                          // project.addPendingOfficer(officer); // Need this method in Project
+                        project.updateArrOfPendingOfficers(officer); //Adds pending officers
+                          
                           System.out.println("Note: Logic to add Officer to Project's *pending* list needs implementation in Project class for NRIC " + officerNric);
                      }
 
@@ -459,12 +452,8 @@ public class DataManager {
                     applicant.setApplied(hasApplied);
 
 
-                    // **Add applicant to the correct list within the project based on status**
-                    // Needs logic in Project class - e.g., project.addApplicantToCorrectList(applicant);
-                    // This method would look at applicant.getAppStatus() and add to the appropriate list
-                    // (arrOfApplicants, successfulApplicants, unsuccessfulApplicants, bookedApplicants, withdrawRequests)
-                    // Example placeholder call:
-                    project.addApplicantToCorrectList(applicant); // Replace with actual Project method call
+                    // Adds applicant to the correct list within the project based on status
+                    project.addApplicantToCorrectList(applicant); 
 
                     appsLoaded++;
                 } else {
