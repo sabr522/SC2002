@@ -138,10 +138,9 @@ public class ApplicantCLI {
     private void handleEnquiryActions() {
         System.out.print("Enter the project name you want to enquire about: ");
         String projectName = scanner.nextLine();
-    	EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, applicant.getNric(), false); // false = isStaff
+    	EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, applicant.getNric(), false, false); // false = isStaff
         enquiryCLI.showEnquiryMenu(projectName);
    }
-
 
     private int readIntInput() {
         int i = -1;        // Default to an invalid value
