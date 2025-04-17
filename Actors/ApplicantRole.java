@@ -1,29 +1,29 @@
+
 package Actors;
 
 import Project.Project;
-import Services.EnquiryService;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ApplicantRole {
 
-    List<Project> viewAvailProjects();
+	// To view the list of available projects for the applicant based on eligibility
+    List<Project> viewAvailProjects(Map<String, Project> allProjectsMap);
 
-    void applyProject(String projectName, String chosenFlatType);
+    // TO apply for a project, passes the project name and chosen flat type
+    void applyProject(List<Project> availableProjects, String projectName, String chosenFlatType);
 
+    // To view the project the applicant applied for, if any
     String viewAppliedProject();
-
+    
+    // Checks appStatus
     String checkApplicationStatus();
-
+    
+    // Method to book a flat if application status is 'Successful'
     void bookFlat();
-
+    
+    // Method to withdraw the application if the applicant is eligible
     void withdrawApp();
 
-    void submitEnquiry(EnquiryService enquiryService, String content, String projectName);
-
-    void viewEnquiries(EnquiryService enquiryService);
-
-    boolean editEnquiry(EnquiryService enquiryService, int enquiryId, String newContent);
-
-    boolean deleteEnquiry(EnquiryService enquiryService, int enquiryId);
 }
