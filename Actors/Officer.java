@@ -7,34 +7,24 @@ import java.util.List;
 import Project.Project;
 
 public class Officer extends Applicant {
-//    private String citizenApplication;
-    private String officerApplication;
+    private Project officerApplication;
     private boolean status;
     private boolean booked = false;
-//    private List<String> enquiries = new ArrayList<>();
     private List<Project> appliedProjects = new ArrayList<>();
 
     public Officer(String name, String NRIC, String password, String maritalStatus, int age,
             String citizenApplication, String officerApplication, boolean status) {
-	 super(name, NRIC, password, maritalStatus, age, "Null", "Null");
-//	 this.citizenApplication = citizenApplication;
-	 this.officerApplication = officerApplication;
+    	super(name, NRIC, password, maritalStatus, age);
+	 this.officerApplication = null;
 	 this.status = status;
 }
 
-//    public String getCitizenApplication() {
-//        return citizenApplication;
-//    }
-//
-//    public void setCitizenApplication(String citizenApplication) {
-//        this.citizenApplication = citizenApplication;
-//    }
 
-    public String getOfficerApplication() {
+    public Project getOfficerApplication() {
         return officerApplication;
     }
 
-    public void setOfficerApplication(String officerApplication) {
+    public void setOfficerApplication(Project officerApplication) {
         this.officerApplication = officerApplication;
     }
 
@@ -54,18 +44,10 @@ public class Officer extends Applicant {
         this.booked = booked;
     }
     
-//	public List<String> getEnquiries() {
-//		return enquiries;
-//	}
-//
-//	public void setEnquiries(List<String> enquiries) {
-//		this.enquiries = enquiries;
-//	}
-    
 	public void registerProject(String projectName) {
 	    for (Project project : Project.getAllProjects()) {
 	        if (project.getName().equals(projectName)) {
-	            if (this.officerApplication != null && !this.officerApplication.isEmpty()) {
+	        	if (this.officerApplication != null) {
 	                System.out.println("Already registered as an officer for another project.");
 	                return;
 	            }
@@ -87,7 +69,7 @@ public class Officer extends Applicant {
     
     public void showProfile() {
         if (status && officerApplication != null) {
-            System.out.println("Officer for Project: " + officerApplication);
+        	System.out.println("Officer for Project: " + officerApplication.getName());
         } else {
             System.out.println("Officer registration not approved yet.");
         }
@@ -99,7 +81,7 @@ public class Officer extends Applicant {
         }
 
         for (Project project : appliedProjects) {
-            if (project.getName().equals(officerApplication)) {
+        	if (project.equals(officerApplication)) {
                 project.viewAllDetails();
                 return;
             }
@@ -108,26 +90,9 @@ public class Officer extends Applicant {
     }
     
     
-//    Need enquires
-//    public String[] projEnquiries(String projectName) {
-//        for (Project project : appliedProjects) {
-//            if (project.getName().equals(projectName)) {
-//                List<String> collectedEnquiries = new ArrayList<>();
-//                for (Applicant applicant : project.getArrOfApplicants()) {
-//                    collectedEnquiries.addAll(applicant.viewEnquiries());
-//                }
-//                return collectedEnquiries.isEmpty()
-//                    ? new String[]{"No enquiries found."}
-//                    : collectedEnquiries.toArray(new String[0]);
-//            }
-//        }
-//        return new String[]{"Project not found."};
-//    }
-    
-    
     public void successfulApplicants() {
         for (Project project : appliedProjects) {
-            if (project.getName().equals(officerApplication)) {
+        	if (project.equals(officerApplication)) {
                 List<Applicant> successfulList = new ArrayList<>(project.getSuccessfulApplicants());
 
                 for (Applicant applicant : successfulList) {
@@ -145,9 +110,9 @@ public class Officer extends Applicant {
                     if (booked) {
                         applicant.setAppStatus("Booked");
                         applicant.setApplied(true);
-                        applicant.setProject(project.getName());
+                        applicant.setProject(project);
                         project.updateBookedApplicants(applicant);
-                        System.out.println("Booked applicant: " + applicant.getName() + " (" + applicant.getNRIC() + ")");
+                        System.out.println("Booked applicant: " + applicant.getName() + " (" + applicant.getNric() + ")");
                     } else {
                         System.out.println("No available flats of type: " + flatType + " for applicant " + applicant.getName());
                     }
@@ -160,13 +125,13 @@ public class Officer extends Applicant {
     
     public void generateReceipt(String nric) {
         for (Project project : appliedProjects) {
-            if (!project.getName().equals(officerApplication)) continue;
+        	if (!project.equals(officerApplication)) continue;;
 
             for (Applicant applicant : project.getBookedApplicants()) {
-                if (applicant.getNRIC().equals(nric)) {
+                if (applicant.getNric().equals(nric)) {
                     System.out.println("----- RECEIPT -----");
                     System.out.println("Name: " + applicant.getName());
-                    System.out.println("NRIC: " + applicant.getNRIC());
+                    System.out.println("NRIC: " + applicant.getNric());
                     System.out.println("Age: " + applicant.getAge());
                     System.out.println("Marital Status: " + applicant.getMaritalStatus());
                     System.out.println("Flat Type: " + applicant.getTypeFlat());
@@ -180,18 +145,31 @@ public class Officer extends Applicant {
     }
     
     @Override
-    public void applyProject(Project project, String chosenFlatType) {
-        if (project == null || chosenFlatType == null) {
+    public void applyProject(List<Project> availableProjects, String projectName, String chosenFlatType) {
+        if (projectName == null || chosenFlatType == null) {
             System.out.println("Invalid project or flat type.");
             return;
         }
 
-        if (project.getPendingOfficerRegistrations().contains(this)) {
+        Project selectedProject = null;
+        for (Project project : availableProjects) {
+            if (project.getName().equalsIgnoreCase(projectName)) {
+                selectedProject = project;
+                break;
+            }
+        }
+
+        if (selectedProject == null) {
+            System.out.println("Project not found in available projects.");
+            return;
+        }
+
+        if (selectedProject.getPendingOfficerRegistrations().contains(this)) {
             System.out.println("You are already registered as a pending officer for this project. Cannot apply.");
             return;
         }
 
-        if (this.getOfficerApplication() != null && this.getOfficerApplication().equals(project.getName())) {
+        if (this.getOfficerApplication() != null && this.getOfficerApplication().equals(selectedProject)) {
             System.out.println("You are already the officer of this project. Cannot apply.");
             return;
         }
@@ -216,13 +194,13 @@ public class Officer extends Applicant {
             return;
         }
 
-        this.setProject(project.getName());
+        this.setProject(selectedProject);
         this.setTypeFlat(chosenFlatType);
         this.setAppStatus("Pending");
         this.setApplied(true);
 
-        project.updateArrOfApplicants(this);
-        System.out.println("You have successfully applied for the " + project.getName() + " project (" + this.getTypeFlat() + " flat).");
+        selectedProject.updateArrOfApplicants(this);
+        System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.getTypeFlat() + " flat).");
     }
 
 
