@@ -7,6 +7,7 @@ import java.util.List;
 import Actors.Applicant;
 import Actors.Officer; 
 
+
 public class Project {
 	
 	private String name;
@@ -30,9 +31,7 @@ public class Project {
 	private List<Applicant> bookedApplicants = new ArrayList<>(); //all successful applicants who have booked
 	private List<Applicant> withdrawRequests = new ArrayList<>(); //all successful applicants who apply for withdrawal but don't have withdrawal decision yet
 	
-	static private ArrayList<Project> allProjects = new ArrayList<>();
-	private boolean updatedInAllProjects = false;
-	
+
 	
 	//Constructor
 	public Project(String name, Boolean visibility, String creatorName, String neighbourhood, LocalDate appOpeningDate, LocalDate appClosingDate, int no2Room, int no3Room ) {
@@ -50,12 +49,6 @@ public class Project {
 		
 	}
 	
-	//Adds project to static array containing all projects
-	public static void updateAllProjects(Project project) {
-		if (project.updatedInAllProjects==false)
-		allProjects.add(project);
-		project.updatedInAllProjects=true;
-	}
 	
 	//Getter Methods
 	public String getName() {
@@ -149,10 +142,7 @@ public class Project {
 		return this.withdrawRequests;
 	}
 	
-	
-	public static List<Project> getAllProjects(){
-		return allProjects;
-	}
+
 	
 	//Prints details
 	public void viewAllDetails() {
