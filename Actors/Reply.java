@@ -14,12 +14,12 @@ public class Reply {
     private final static Map<Enquiry, Integer> enquiryReplyCounters = new HashMap<>();
     private final int id;
 	private final Enquiry enquiry;
-	private final String responder;
+	private final String responderNRIC;
 	private String content;
 	
-	public Reply(Enquiry enquiry, String responder, String content) {
+	public Reply(Enquiry enquiry, String responderNRIC, String content) {
 		this.enquiry = enquiry;
-		this.responder = responder;
+		this.responderNRIC = responderNRIC;
 		this.content = content;
 		
 		int currentReplyCount = enquiryReplyCounters.getOrDefault(enquiry, 0);
@@ -32,8 +32,8 @@ public class Reply {
 		return id;
 	}
 	
-	public String getResponder() {
-		return responder;
+	public String getResponderNRIC() {
+		return responderNRIC;
 	}
 	
 	public String getContent() {
