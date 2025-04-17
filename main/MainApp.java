@@ -203,7 +203,7 @@ public class MainApp {
                     System.out.println("Officer role access is currently disabled in MainApp."); // Keep commented out
                     break;
                 case "applicant":
-                    if (user instanceof Manager) {
+                    if (user instanceof Applicant) {
                         ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, scanner, enquiryService, dataManager, allProjectsMap);
                         applicantCLI.showApplicantMenu();
                     } else { System.err.println("Error: Role/Type mismatch for Applicant."); }
