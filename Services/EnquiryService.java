@@ -99,4 +99,20 @@ public class EnquiryService {
 		}
 		return new ArrayList<>();
 	}
+	
+	/**
+	 * Loads existing enquiries into the service (called by DataManager).
+	 * Clears the current map before loading.
+	 * @param loadedEnquiries A map of Enquiry objects loaded from file.
+	 */
+	public void loadExistingEnquiries(Map<Integer, Enquiry> loadedEnquiries) {
+		if (loadedEnquiries != null) {
+			this.enquiryMap.clear(); // Clear existing map
+			this.enquiryMap.putAll(loadedEnquiries);
+			System.out.println("EnquiryService populated with " + this.enquiryMap.size() + " loaded enquiries.");
+		} else {
+			this.enquiryMap.clear(); // Clear map if loaded data is null
+			System.out.println("No enquiry data loaded, EnquiryService is empty.");
+		}
+	}
 }
