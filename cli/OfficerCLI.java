@@ -79,7 +79,7 @@ public class OfficerCLI {
         System.out.print("Enter Project Name to register: ");
         String projectName = scanner.nextLine();
 
-        officer.registerProject(projectName);
+        officer.registerProject(projectName, allProjectsMap);
     }
 
     private void showOfficerProfile() {
@@ -102,7 +102,13 @@ public class OfficerCLI {
     }
     
     private void manageEnquiries() {
-        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, officer.getNRIC(), true);
-        enquiryCLI.showEnquiryMenu(officer.getOfficerApplication());
+        if (officer.getOfficerApplication() == null) {
+            System.out.println("You are not assigned to a project yet. Cannot manage enquiries.");
+            return;
+        }
+
+        String projectName = officer.getOfficerApplication().getName();
+        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, officer.getNric(), true, false); 
+        enquiryCLI.showEnquiryMenu(projectName);
     }
 }
