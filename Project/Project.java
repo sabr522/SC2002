@@ -248,7 +248,7 @@ public class Project {
 	}
 	
 	public void updateArrOfPendingOfficers (Officer officer) {
-			this.arrOfOfficers.add(officer);
+		this.arrOfPendingOfficers.add(officer);
 	}
 
 	public void updateArrOfOfficers(String creatorName, Officer officer) {
@@ -270,6 +270,31 @@ public class Project {
 		}
 	}
 	
+	public void addApplicantToCorrectList(Applicant applicant){
+		switch(applicant.getAppStatus()){
+			case "Pending":
+			this.arrOfApplicants.add(applicant);
+			break;
+
+			case "Successful":
+			this.successfulApplicants.add(applicant);
+			break;
+
+			case "Unsuccessful":
+			this.unsuccessfulApplicants.add(applicant);
+			break;
+
+			case "Withdrawn":
+			this.withdrawRequests.add(applicant);
+			break;
+
+			case "Booked":
+			this.bookedApplicants.add(applicant);
+			break;
+		}
+	}
+
+
 	public void updateArrOfApplicants(Applicant applicant) {
 			this.arrOfApplicants.add(applicant);
 	}
@@ -300,11 +325,24 @@ public class Project {
 			if (successfulApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
 			{
 				this.bookedApplicants.add(applicant);
-				if (applicant.getTypeFlat().equals("2Room")){
+				if (applicant.getTypeFlat().equals("2-Room")){
+					if (this.avalNo2Room>0){
 						this.avalNo2Room -=1;
+					}
+					else{
+						System.out.println("Unsuccessful Booking. No remaining 2 Room Flats.");
+					}
+						
 				}
 				else{
-					this.avalNo3Room -=1;
+					if (this.avalNo3Room>0){
+						this.avalNo3Room -=1;
+					}
+					else{
+						System.out.println("Unsuccessful Booking. No remaining 3 Room Flats.");
+					}
+
+					
 				}
 			}
 		}	
