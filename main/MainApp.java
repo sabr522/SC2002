@@ -193,8 +193,8 @@ public class MainApp {
                     break;
                 case "applicant":
                     if (user instanceof Applicant) {
-                        ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, scanner, enquiryService, dataManager, allProjectsMap);
-                        applicantCLI.showApplicantMenu();
+                        // ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, scanner, enquiryService, dataManager, allProjectsMap);
+                        // applicantCLI.showApplicantMenu();
                     } else { System.err.println("Error: Role/Type mismatch for Applicant."); }
                     break;
                 default:
