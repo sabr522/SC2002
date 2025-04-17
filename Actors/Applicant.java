@@ -1,13 +1,12 @@
 package Actors;
 
-import Actors.Officer; 
-import Actors.Manager;
-import Services.EnquiryService;
+
 import Project.Project;
 
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class Applicant extends User implements ApplicantRole {
 	
@@ -21,11 +20,9 @@ public class Applicant extends User implements ApplicantRole {
     public Applicant(String name, String nric, String password, String maritalStatus, int age) {
         super(name, nric, age, maritalStatus, password, "Applicant");
         this.appStatus= "Null";
-        this.TypeFlat= "Null";
-        
+        this.TypeFlat= "Null";    
     }
-
-
+    
     public String getTypeFlat() {
     	return TypeFlat;
     }
@@ -34,39 +31,29 @@ public class Applicant extends User implements ApplicantRole {
     	return project;
     }
     
-    public String getAppStatus(){
-        return appStatus;
+    public String getAppStatus() {
+    	return appStatus;
     }
-
+    
     public boolean isApplied() { 
     	return applied; 
     }
     
-    
-    public void setName(String name) { 
-    	this.name = name; 
+    public String checkApplicationStatus() {
+        return appStatus;
     }
     
-    public void setNRIC(String nric) { 
-    	this.nric = nric; 
-    }
-    
-    public void setAge(int age) { 
-    	this.age = age; 
-    }
-    
-    public void setMaritalStatus(String maritalStatus) { 
-    	this.maritalStatus = maritalStatus; 
-    }
-    
-   
     public void setApplied(boolean applied) { 
     	this.applied = applied; 
     }
     
-   
     public void setProject(Project project) { 
-    	this.project = project; 
+    	if(project != null)
+    	   this.project = project; 
+    }
+    
+    public void setWithdrawalStatus(boolean WithdrawStatus) {
+    	this.WithdrawStatus = WithdrawStatus;
     }
     
 
@@ -77,47 +64,44 @@ public class Applicant extends User implements ApplicantRole {
         this.TypeFlat = TypeFlat;
     }
     
-    public void setAppStatus(String appStatus) { 
-    	this.appStatus = appStatus;
+   
+    public void setAppStatus(String appStatus) {
+        List<String> validStatuses = Arrays.asList("Pending", "Unsuccessful", "Successful", "Booked");
+        if (!validStatuses.contains(appStatus)) {
+            throw new IllegalArgumentException("Invalid status: " + appStatus);
+        }
+        this.appStatus = appStatus;
     }
+    
+   
+    public List<Project> viewAvailProjects(Map<String, Project> allProjectsMap) {
+        List<Project> availableProjects = new ArrayList<>();                  // A list for avail projects        
 
-    public void setWithdrawalStatus(boolean WithdrawStatus) {
-    	this.WithdrawStatus = WithdrawStatus;
-    }
+        if (this.applied) {
+            System.out.println("You have already applied for a project. No other projects available.");
+            return availableProjects;
+        }
 
- 
-    public List<Project> viewAvailProjects() {
-    	
-        List<Project> allProjects = Project.getAllProjects();            // Fetches all projects
-        List<Project> availableProjects = new ArrayList<>();            // Creates a list for avail projects
-        
-        if(this.applied) {
-        	System.out.println("You have already applied for a project. No other projects available.");
-        	return availableProjects;
-        } 
-        
-        for (Project proj : allProjects) {
-            if (!proj.getVisibility()) continue; // Skip if project is not visible
+        for (Project proj : allProjectsMap.values()) {
+            if (!proj.getVisibility()) continue;       // Skip if project is not visible
 
             if (this.getMaritalStatus().equals("Single") && this.getAge() >= 35) {
                 if (proj.getAvalNo2Room() > 0) {
                     availableProjects.add(proj);
-                }               
-            } 
-            
-            else if (this.getMaritalStatus().equals("Married") && this.getAge() >= 21) {
+                }
+            } else if (this.getMaritalStatus().equals("Married") && this.getAge() >= 21) {
                 if (proj.getAvalNo2Room() > 0 || proj.getAvalNo3Room() > 0) {
                     availableProjects.add(proj);
                 }
-             }
-         }
-      
+            }
+        }
+
         return availableProjects;
     }
+    
 
-    public void applyProject(String Projectname, String chosenFlatType) {
+    public void applyProject(List<Project> availableProjects, String Projectname, String chosenFlatType) {
     	
-    	List<Project> availableProjects = viewAvailProjects();
     	if (this.applied) {
     		System.out.println("You have already applied for a project.");
             return;
@@ -142,12 +126,9 @@ public class Applicant extends User implements ApplicantRole {
             return;
         }
         
-        if (!(chosenFlatType.equals("2-Room") || chosenFlatType.equals("3-Room"))) {
-            System.out.println("Invalid flat type entered.");
-            return;
-        }
         
         // Check if project has the chosen flat type
+        
         if (chosenFlatType.equals("2-Room") && selectedProject.getAvalNo2Room() == 0) {
             System.out.println("This project does not offer any 2-Room flats.");
             return;
@@ -157,6 +138,8 @@ public class Applicant extends User implements ApplicantRole {
             System.out.println("This project does not offer any 3-Room flats.");
             return;
         }
+        
+        // Check eligibility 
         
         if (this.getMaritalStatus().equals("Single") && this.getAge() >= 35) {
             if (!chosenFlatType.equals("2-Room")) {
@@ -175,13 +158,15 @@ public class Applicant extends User implements ApplicantRole {
             return;
         }
 
-        // Assign project and flat type
-        this.project = selectedProject;
-        this.TypeFlat = chosenFlatType;
-        this.appStatus = "Pending";
-        selectedProject.updateArrOfApplicants(this);
-        this.applied = true;
+        // update
+        
+        setTypeFlat(chosenFlatType);  // sets & handles the validation
+        setProject(selectedProject);  // Set the selected project
+        setAppStatus("Pending");      // Set to default application status 
+        setApplied(true);             // Mark the applicant as having applied
 
+        selectedProject.updateArrOfApplicants(this); 
+        
         System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.TypeFlat + " flat).");
     }
         
@@ -195,10 +180,6 @@ public class Applicant extends User implements ApplicantRole {
     	    }
     }
 
-    
-    public String checkApplicationStatus() {
-        return appStatus;
-    }
 
     public void bookFlat() {
         if (this.appStatus.equals("Successful")) {
@@ -219,7 +200,7 @@ public class Applicant extends User implements ApplicantRole {
                 return;
             }
             
-            this.WithdrawStatus = true; // flag request
+
             if (project !=null)           	
                 project.updateWithdrawRequests(this);
             
@@ -229,57 +210,5 @@ public class Applicant extends User implements ApplicantRole {
             System.out.println("You can only request withdrawal if your application is Successful or Booked.");
         }
     }
-
-
-
-
-public void submitEnquiry(EnquiryService enquiryService, String content, String projectName) {
-    
-	List<Project> availableProjects = viewAvailProjects(); 
-	boolean projectExists = availableProjects.stream()
-        .anyMatch(p -> p.getName().equalsIgnoreCase(projectName));
-
-    if (!projectExists) {
-        System.out.println("Project '" + projectName + "' is not in your available list.");
-        return;
-    }
-
-    enquiryService.submitEnquiry(this.getNric(), content, projectName);
-
-    System.out.println("Enquiry submitted.");
-}
-
-
-public void viewEnquiries(EnquiryService enquiryService) {
-    List<Enquiry> enquiries = enquiryService.getEnquiryByApplicantNRIC(this.getNric());
-
-    if (enquiries.isEmpty()) {
-        System.out.println("You have no enquiries.");
-        return;
-    }
-
-    for (Enquiry enquiry : enquiries) {
-        System.out.println("[" + enquiry.getProject() + "] Enquiry ID: " + enquiry.getId());
-        System.out.println("  Content: " + enquiry.getContent());
-
-        List<Reply> replies = enquiry.getReplies();
-        if (replies.isEmpty()) {
-            System.out.println("  No replies yet.");
-        } else {
-            for (Reply reply : replies) {
-                System.out.println("  Reply: " + reply.getContent());
-            }
-        }
-    }
-}
-
-
-public boolean editEnquiry(EnquiryService enquiryService, int enquiryId, String newContent) {
-    return enquiryService.editEnquiry(enquiryId, this.getNric(), newContent);
-}
-
-public boolean deleteEnquiry(EnquiryService enquiryService, int enquiryId) {
-    return enquiryService.deleteEnquiry(enquiryId, this.getNric());
-}
 
 }
