@@ -1,12 +1,5 @@
 package Actors;
 
-import Actors.User; // Base class
-import Actors.Applicant;
-import Actors.Officer;
-import Actors.Manager;
-import Actors.Enquiry;
-import Project.Project;
-
 import java.util.HashMap;
 import java.util.Map;
 
