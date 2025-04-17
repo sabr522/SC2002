@@ -30,7 +30,7 @@ public class Manager extends User { // Extend the abstract User class
      * @param maritalStatus Manager's marital status (for User).
      * @param password      Manager's password (for User).
      */
-    public Manager(String name, String nric, int age, String maritalStatus, String password) {
+    public Manager(String name, String nric, String password, String maritalStatus, int age) {
         // Call the User constructor FIRST to initialize common fields
         super(name, nric, age, maritalStatus, password, "Manager"); // Role is fixed as "Manager"
 
