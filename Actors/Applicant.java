@@ -15,7 +15,6 @@ public class Applicant extends User implements ApplicantRole {
     private String appStatus;
     private boolean applied = false;
     private boolean withdrawStatus = false;
-    
 
     /**
      * Protected constructor for subclasses (like Officer) to pass the correct role up.
@@ -24,18 +23,17 @@ public class Applicant extends User implements ApplicantRole {
         super(name, nric, age, maritalStatus, password, role); // Pass the role up
         // Initialize fields to default states
         this.project = null;
-        this.appStatus = null; // No status initially
-        this.typeFlat = null; // No flat type initially
+        this.appStatus = null; 
+        this.typeFlat = null; 
         this.applied = false;
         this.withdrawStatus = false;
     }
-
     /**
      * Public constructor specifically for creating Applicant instances.
      * Calls the protected constructor with the role "Applicant".
      */
-    public Applicant(String name, String nric, int age, String maritalStatus, String password) {
-        this(name, nric, age, maritalStatus, password, "Applicant"); // Call protected constructor with role
+    public Applicant(String name, String nric, String password, String maritalStatus, int age) {
+        this(name, nric, age, maritalStatus, password, "Applicant"); 
     }
     
     public String getTypeFlat() {
@@ -91,10 +89,38 @@ public class Applicant extends User implements ApplicantRole {
         }
         this.appStatus = appStatus;
     }
-    
+    /**
+     * Gets a list of projects that are visible to this applicant based on
+     * project visibility settings and basic applicant eligibility (age, marital status),
+     * regardless of whether the applicant has already applied for a project.
+     * This is primarily intended for contexts like selecting a project to enquire about.
+     *
+     * @param allProjectsMap Map of all projects in the system.
+     * @return A List of Project objects the applicant can view.
+     */
+    public List<Project> getProjectsVisibleForEnquiry(Map<String, Project> allProjectsMap) {
+        List<Project> visibleProjects = new ArrayList<>();
+        if (allProjectsMap == null) return visibleProjects;
+
+        for (Project proj : allProjectsMap.values()) {
+            if (proj == null || !proj.getVisibility()) continue; 
+
+            boolean canPotentiallyApply = false;
+            if (this.getMaritalStatus().equals("Single") && this.getAge() >= 35) {
+                canPotentiallyApply = true;
+            } else if (this.getMaritalStatus().equals("Married") && this.getAge() >= 21) {
+                canPotentiallyApply = true; 
+            }
+
+            if (canPotentiallyApply) { 
+                visibleProjects.add(proj);
+            }
+        }
+        return visibleProjects;
+    }
    
     public List<Project> viewAvailProjects(Map<String, Project> allProjectsMap) {
-        List<Project> availableProjects = new ArrayList<>();                  // A list for avail projects        
+        List<Project> availableProjects = new ArrayList<>();   
 
         if (this.applied) {
             System.out.println("You have already applied for a project. No other projects available.");
@@ -102,7 +128,7 @@ public class Applicant extends User implements ApplicantRole {
         }
 
         for (Project proj : allProjectsMap.values()) {
-            if (!proj.getVisibility()) continue;       // Skip if project is not visible
+            if (!proj.getVisibility()) continue;     
 
             if (this.getMaritalStatus().equals("Single") && this.getAge() >= 35) {
                 if (proj.getAvalNo2Room() > 0) {
@@ -179,7 +205,7 @@ public class Applicant extends User implements ApplicantRole {
 
         // update
         
-        settypeFlat(chosenFlatType);  // sets & handles the validation
+        setTypeFlat(chosenFlatType);  // sets & handles the validation
         setProject(selectedProject);  // Set the selected project
         setAppStatus("Pending");      // Set to default application status 
         setApplied(true);             // Mark the applicant as having applied
@@ -190,13 +216,23 @@ public class Applicant extends User implements ApplicantRole {
     }
         
     
-    public String viewAppliedProject() {        
-    	    if (applied && project != null) {
-    	        return "Project: " + project.getName() + ", Application Status: " + this.checkApplicationStatus();
-    	    } 
-    	    else {
-    	        return "No project applied";
-    	    }
+    public String viewAppliedProject() {
+        if (applied && project != null) {
+            System.out.println("\n--- Details of Your Applied Project ---");
+            try {
+                project.viewAllDetails(false); 
+    
+                return "-------------------------------------\nApplication Status: " + this.checkApplicationStatus(); // checkApplicationStatus() just returns appStatus field
+    
+            } catch (Exception e) {
+                System.err.println("Error displaying applied project details: " + e.getMessage());
+                // Still return status if available, but acknowledge error
+                return "Error displaying project details. Status: " + this.checkApplicationStatus();
+            }
+        }
+        else {
+            return "You have not applied for any project.";
+        }
     }
 
 

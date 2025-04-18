@@ -12,10 +12,10 @@ import Actors.Manager;
 import Actors.Officer;
 import Actors.Applicant;
 import Project.Project;
+import Services.EnquiryService;
 
 import java.util.Map;
 import java.util.Scanner;
-import java.util.InputMismatchException;
 
 /**
  * Main application class for the BTO Management System.
@@ -28,6 +28,7 @@ public class MainApp {
     // Core application components and state
     private static Scanner scanner = new Scanner(System.in);
     private static DataManager dataManager = new DataManager();
+    private static EnquiryService enquiryService = new EnquiryService();
     private static Map<String, User> allUsersMap = null;
     private static Map<String, Project> allProjectsMap = null;
 
@@ -81,6 +82,12 @@ public class MainApp {
 
                 case 2:   
                     boolean passwordChanged = LoginCLI.changePassword(scanner, currentUser);
+                    if (passwordChanged) {
+                        currentUser = null;
+                        System.out.println("Saving updated user data...");
+                        saveAllData();
+                        System.out.println("User data saved.");
+                    }
                     break;
 
                 case 0:
@@ -123,7 +130,8 @@ public class MainApp {
             dataManager.loadProjectOfficers(allProjectsMap, allUsersMap);
             System.out.println("Loading applications...");
             dataManager.loadApplications(allProjectsMap, allUsersMap);
-            // Load Enquiries if needed
+            System.out.println("Loading enquiries and replies...");
+            dataManager.loadEnquiries(enquiryService); 
             if (allUsersMap == null || allProjectsMap == null) {
                  System.err.println("Error: Data maps are null after loading attempt.");
                  return false;
@@ -150,7 +158,8 @@ public class MainApp {
             dataManager.saveUsers(allUsersMap);
             System.out.println("Saving all project data...");
             dataManager.saveAllProjectData(allProjectsMap);
-            // Save Enquiries if needed
+            System.out.println("Saving enquiries and replies...");
+            dataManager.saveEnquiries(enquiryService); 
         } catch (Exception e) {
             System.err.println("Error encountered during data saving: " + e.getMessage());
             e.printStackTrace();
@@ -172,30 +181,42 @@ public class MainApp {
             switch (role) {
                 case "manager":
                     if (user instanceof Manager) {
-                        ManagerCLI managerCLI = new ManagerCLI((Manager) user, scanner, dataManager, allProjectsMap, allUsersMap);
+                        ManagerCLI managerCLI = new ManagerCLI((Manager) user,
+                                                    scanner,
+                                                    dataManager,
+                                                    enquiryService, 
+                                                    allProjectsMap, 
+                                                    allUsersMap);
                         managerCLI.showManagerMenu();
-                    } else { System.err.println("Error: Role/Type mismatch for Manager."); }
+                    } else { 
+                        System.err.println("Error: Role/Type mismatch for Manager."); 
+                    }
                     break;
                 case "officer":
                 	if (user instanceof Officer) {
-                        OfficerCLI officerCLI = new OfficerCLI(
-                            (Officer) user,
-                            scanner,
-                            dataManager,
-                            allProjectsMap,
-                            allUsersMap
-                        );
+                        OfficerCLI officerCLI = new OfficerCLI((Officer) user,
+                                                    scanner,
+                                                    dataManager,
+                                                    enquiryService, 
+                                                    allProjectsMap, 
+                                                    allUsersMap);
                         officerCLI.showOfficerMenu();
                     } else {
                         System.err.println("Error: Role/Type mismatch for Officer.");
                     }
-                    System.out.println("Officer role access is currently disabled in MainApp."); // Keep commented out
                     break;
                 case "applicant":
                     if (user instanceof Applicant) {
-                        // ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, scanner, enquiryService, dataManager, allProjectsMap);
-                        // applicantCLI.showApplicantMenu();
-                    } else { System.err.println("Error: Role/Type mismatch for Applicant."); }
+                        ApplicantCLI applicantCLI = new ApplicantCLI((Applicant) user, 
+                                                        scanner, 
+                                                        enquiryService, 
+                                                        dataManager, 
+                                                        allProjectsMap,
+                                                        allUsersMap);
+                        applicantCLI.showApplicantMenu();
+                    } else { 
+                        System.err.println("Error: Role/Type mismatch for Applicant."); 
+                    }
                     break;
                 default:
                     System.err.println("Error: Unknown user role: " + user.getRole());

@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map; // Added import for Map needed in updated updateRegOfficer
 import java.util.Objects;
-import java.util.stream.Collectors; // For report generation filtering
 
 /**
  * Represents a Manager user, inheriting common attributes from User.
@@ -30,7 +29,7 @@ public class Manager extends User { // Extend the abstract User class
      * @param maritalStatus Manager's marital status (for User).
      * @param password      Manager's password (for User).
      */
-    public Manager(String name, String nric, int age, String maritalStatus, String password) {
+    public Manager(String name, String nric, String password, String maritalStatus, int age) {
         // Call the User constructor FIRST to initialize common fields
         super(name, nric, age, maritalStatus, password, "Manager"); // Role is fixed as "Manager"
 
@@ -224,7 +223,7 @@ public class Manager extends User { // Extend the abstract User class
     public void getProjectDetails(Project project) {
         if (project != null) {
             try {
-                project.viewAllDetails(); 
+                project.viewAllDetails(true); 
             } catch (Exception e) {
                  System.err.println("Error retrieving project details: " + e.getMessage());
                  System.err.println("Error: Could not retrieve details for project " + project.getName());
@@ -277,7 +276,7 @@ public class Manager extends User { // Extend the abstract User class
                             System.out.println("Officer '" + officerToUpdate.getName() + "' registration rejected for project '" + project.getName() + "'.");
                         }
 
-                        officerToUpdate.setStatus(approve); 
+                        officerToUpdate.setHandlingApproved(approve);
                         processed = true;
                         targetProject = project; // Store project for logging/confirmation
                         break; // Process only the first match found

@@ -1,9 +1,10 @@
-NRIC,Name,Age,MaritalStatus,Password,Role
+NRIC,Name,Age,MaritalStatus,PasswordHash,Role
+T1234567B,Jessica,40,Married,password,Manager
 T1234567C,Charlie Loh,50,Married,password,Manager
+G9876543C,Raymond Lim,40,Single,testing,Officer
+G9876543B,Timothy Tan,40,Single,password,Officer
+G9876543A,Caleb Tan,40,Single,password,Officer
 S9876543Z,David Yap,28,Single,password,Applicant
 G9876543Z,Emily Goh,35,Married,password,Applicant
-S1234567A,Alice Tan,30,Married,password,Applicant
-G1234567B,Bob Lim,45,Single,password,Applicant
-G9876543A,Caleb Tan,40,Single,password,Officer
-G9876543B,Timothy Tan,40,Single,password,Officer
-G9876543C,Raymond Lim,40,Single,password,Officer
+S1234567A,Alice Tan,40,Married,password,Applicant
+G1234567B,Bob Lim,40,Single,password,Applicant
