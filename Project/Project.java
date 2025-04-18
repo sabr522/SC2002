@@ -2,7 +2,9 @@ package Project;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import Actors.Applicant;
 import Actors.Officer; 
@@ -24,7 +26,6 @@ public class Project {
 	private int avalNo2Room;
 	private int avalNo3Room;
 	
-	List<Applicant> allApplicants = new ArrayList<>(); // all applicants
 	private List<Applicant> arrOfApplicants = new ArrayList<>(); //pending applicants (not successful or unsuccessful)
 	private List<Applicant> successfulApplicants = new ArrayList<>(); //all successful applicants who haven't booked yet or haven't withdrawn yet
 	private List<Applicant> unsuccessfulApplicants = new ArrayList<>(); //all unsuccessful applicants (initially unsuccessful or successful and then withdraw)
@@ -99,23 +100,34 @@ public class Project {
 		return this.arrOfOfficers;
 	}
 	public List<Applicant> getAllApplicants() {
-	
+		Set<Applicant> uniqueApplicants = new HashSet<>(); 
+
 		// Add pending applicants
 		if (getArrOfApplicants() != null) {
-			allApplicants.addAll(getArrOfApplicants());
+			uniqueApplicants.addAll(getArrOfApplicants());
 		}
 	
 		// Add successful applicants
 		if (getSuccessfulApplicants() != null) {
-			allApplicants.addAll(getSuccessfulApplicants());
+			uniqueApplicants.addAll(getSuccessfulApplicants());
 		}
 	
 		// Add unsuccessful applicants
 		if (getUnsuccessfulApplicants() != null) {
-			allApplicants.addAll(getUnsuccessfulApplicants());
+			uniqueApplicants.addAll(getUnsuccessfulApplicants());
+		}
+
+		// Add booked
+		if (this.bookedApplicants != null) {      
+			uniqueApplicants.addAll(this.bookedApplicants);
+		}
+
+		// Add withdrawn
+		if (this.withdrawRequests != null) {         
+				uniqueApplicants.addAll(this.withdrawRequests);
 		}
 	
-		return allApplicants;
+		return new ArrayList<>(uniqueApplicants);
 	}
 	
 	public List<Applicant> getArrOfApplicants(){
@@ -145,14 +157,19 @@ public class Project {
 
 	
 	//Prints details
-	public void viewAllDetails() {
+	public void viewAllDetails(boolean isStaff) {
 		System.out.println("Project Name: " + this.name);
 		System.out.println("Manager Name: " + this.creatorName);
-		System.out.println("Visibility: " + this.visibility);
+		if (isStaff) System.out.println("Visibility: " + this.visibility);
 		System.out.println("Neighbourhood: " + this.neighbourhood);
 		System.out.println("Application Opening: " + this.appOpeningDate);
 		System.out.println("Application Closing: " + this.appClosingDate);
-		System.out.println("Officers: " + this.arrOfOfficers);
+		if (isStaff) {
+			System.out.println("Officers:");
+			for (Officer o : arrOfOfficers) {
+				System.out.println("- " + o.getName());
+			}
+		}
 		System.out.println("Number of 2-Room: " + this.no2Room);
 		System.out.println("Number of 3-Room: " + this.no3Room);
 	
@@ -237,8 +254,11 @@ public class Project {
 		}
 	}
 	
-	public void updateArrOfPendingOfficers (Officer officer) {
-		this.arrOfPendingOfficers.add(officer);
+	public boolean updateArrOfPendingOfficers (Officer officer) {
+     if (officer != null && !this.arrOfPendingOfficers.contains(officer)) {
+          return this.arrOfPendingOfficers.add(officer);
+     }
+     return false; 
 	}
 
 	public void updateArrOfOfficers(String creatorName, Officer officer) {
@@ -309,7 +329,7 @@ public class Project {
 		}		
 	}
 	
-	public void updateBookedApplicants(Applicant applicant) {
+	public boolean updateBookedApplicants(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
 			String targetNRIC=applicant.getNric();
 			if (successfulApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
@@ -318,24 +338,27 @@ public class Project {
 				if (applicant.getTypeFlat().equals("2-Room")){
 					if (this.avalNo2Room>0){
 						this.avalNo2Room -=1;
+						return true;
 					}
 					else{
 						System.out.println("Unsuccessful Booking. No remaining 2 Room Flats.");
+						return false;
 					}
 						
 				}
 				else{
 					if (this.avalNo3Room>0){
 						this.avalNo3Room -=1;
+						return true;
 					}
 					else{
 						System.out.println("Unsuccessful Booking. No remaining 3 Room Flats.");
+						return false;
 					}
-
-					
 				}
 			}
 		}	
+		return false;
 	}
 	
 	
