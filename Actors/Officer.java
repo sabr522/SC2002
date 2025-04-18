@@ -1,217 +1,348 @@
 package Actors;
 
-import java.time.LocalDate;
+import Project.Project;
+import java.time.LocalDate; // Added for date check
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects; // Added for potential future use
+import java.util.Scanner;
 
-import Project.Project;
-
+// Sticking with Officer extends Applicant as requested
 public class Officer extends Applicant {
-    private Project officerApplication;
-    private boolean status;
-    private boolean booked = false;
-    private List<Project> appliedProjects = new ArrayList<>();
 
+    // --- Officer Specific State ---
+    private Project handledProject;
+    private boolean isHandlingApproved;
+
+    /**
+     * Constructor for Officer.
+     * Calls the protected Applicant constructor to set the role correctly.
+     */
     public Officer(String name, String nric, String password, String maritalStatus, int age) {
+        // Call protected Applicant constructor, passing the correct role
         super(name, nric, age, maritalStatus, password, "Officer");
-        this.officerApplication = null;
-        this.status = false;
+        // Initialize Officer-specific fields
+        this.handledProject = null;
+        this.isHandlingApproved = false;
     }
 
-    public Project getOfficerApplication() {
-        return officerApplication;
+    // --- Getters and Setters for Officer state ---
+
+    /** Gets the Project object this officer is handling or pending approval for. */
+    public Project getHandledProject() {
+        return handledProject;
     }
 
-    public void setOfficerApplication(Project officerApplication) {
-        this.officerApplication = officerApplication;
+    /** Sets the Project this officer will handle (called by Manager or DataManager). */
+    public void setHandledProject(Project project) {
+        // Consider adding logic: Can only set if not already handling another?
+        this.handledProject = project;
     }
 
-    public boolean getStatus() {
-        return status;
+    /** Gets the approval status for handling the assigned project. */
+    public boolean isHandlingApproved() {
+        return isHandlingApproved;
     }
 
-    public void setStatus(boolean status) {
-        this.status = status;
+    /** Sets the approval status (called by Manager or DataManager). */
+    public void setHandlingApproved(boolean approved) {
+        this.isHandlingApproved = approved;
     }
 
-    public boolean getBooked() {
-        return booked;
-    }
+    // --- Officer Actions ---
 
-    public void setBooked(boolean booked) {
-        this.booked = booked;
-    }
-    
+    /**
+     * Allows an Officer to register interest in handling a specific project.
+     * Adds the officer to the project's pending list after eligibility checks.
+     * Uses the corrected super constructor, so getRole() should be "Officer".
+     */
     public void registerProject(String projectName, Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
-        if (!allProjectsMap.containsKey(projectName)) {
-            System.out.println("Project not found.");
+        if (projectName == null || projectName.trim().isEmpty()) {
+            System.out.println("Project name cannot be empty.");
+            return;
+        }
+        Project projectToRegister = allProjectsMap.get(projectName.trim());
+
+        if (projectToRegister == null) {
+            System.out.println("Project '" + projectName + "' not found.");
             return;
         }
 
-        Project project = allProjectsMap.get(projectName);
-
-        if (this.officerApplication != null) {
-            System.out.println("Already registered as an officer for another project.");
+        // 1. Check if already handling/pending another project
+        if (this.handledProject != null) {
+            System.out.println("You are already handling or pending approval for project '" + this.handledProject.getName() + "'. Cannot register for another.");
             return;
         }
 
+        // TODO : Maybe not this logic??
+        // // 2. Check application period of the target project
         // LocalDate now = LocalDate.now();
-        // if (now.isBefore(project.getAppOpeningDate()) || now.isAfter(project.getAppClosingDate())) {
-        //     System.out.println("This project is not open for registration.");
+        // if (projectToRegister.getAppOpeningDate() == null || projectToRegister.getAppClosingDate() == null ||
+        //     now.isBefore(projectToRegister.getAppOpeningDate()) || now.isAfter(projectToRegister.getAppClosingDate())) {
+        //     System.out.println("Project '" + projectName + "' is not open for officer registration at this time.");
         //     return;
         // }
-        
-        User userAsApplicant = allUsersMap.get(this.getNric());
-        if (userAsApplicant instanceof Applicant) {
-             Applicant appSelf = (Applicant) userAsApplicant;
-             // Check if they applied AND the project matches
-             if (appSelf.isApplied() && project.equals(appSelf.getProject())) {
-                 System.out.println("You cannot register as an Officer for a project you have applied to as an Applicant.");
-                 return;
+
+        // 3. Check if applied as Applicant for THIS project
+        // Access Applicant fields directly due to inheritance
+        if (super.isApplied() && projectToRegister.equals(super.getProject())) {
+             System.out.println("You cannot register as an Officer for a project you have applied to as an Applicant.");
+             return;
+        }
+
+        // 4. Check if officer is registered (pending/approved) for another project within the same application period
+        for(Project otherProject : allProjectsMap.values()){
+            if (otherProject == null || otherProject.equals(projectToRegister)) continue; // Skip self and nulls
+
+            // Check if the periods overlap
+             if (projectToRegister.isClashing(otherProject.getAppOpeningDate(), otherProject.getAppClosingDate())) {
+                 // Check if officer is pending or approved in the overlapping project
+                  if ((otherProject.getPendingOfficerRegistrations() != null && otherProject.getPendingOfficerRegistrations().contains(this)) ||
+                      (otherProject.getArrOfOfficers() != null && otherProject.getArrOfOfficers().contains(this)))
+                  {
+                      System.out.println("You are already registered (pending or approved) for project '" + otherProject.getName() + "' which has an overlapping application period.");
+                      System.out.println("Cannot register for '" + projectName + "'.");
+                      return;
+                  }
              }
         }
 
-        project.updateArrOfPendingOfficers(this);
-        this.appliedProjects.add(project);
-        System.out.println("Registered for project as officer (pending approval).");
-    }
-    
-    public void showProfile() {
-        if (status && officerApplication != null) {
-        	System.out.println("Officer for Project: " + officerApplication.getName());
+
+        // All checks passed, add to pending list
+        if (projectToRegister.updateArrOfPendingOfficers(this)) {
+             // Link the project, but keep status as not approved
+             this.setHandledProject(projectToRegister);
+             this.setHandlingApproved(false);
+             System.out.println("Successfully registered interest for project '" + projectToRegister.getName() + "'. Awaiting Manager approval.");
         } else {
-            System.out.println("Officer registration not approved yet.");
+             System.out.println("Failed to register interest for project '" + projectToRegister.getName() + "'. You might already be on the pending list.");
         }
     }
-    
-    public void viewProject() {
-        if (officerApplication == null) {
-        	System.out.println("You are not handling any project.");
-        }
 
-        for (Project project : appliedProjects) {
-        	if (project.equals(officerApplication)) {
-                project.viewAllDetails();
-                return;
+    /**
+     * Displays the Officer's profile information.
+     */
+    public void showProfile() { // Renamed from showOfficerProfile for consistency if needed
+        System.out.println("\n--- Officer Profile ---");
+        System.out.println("Name: " + getName());
+        System.out.println("NRIC: " + getNric());
+        System.out.println("Role: " + getRole()); // Should now correctly show "Officer"
+        if (isHandlingApproved && handledProject != null) {
+            System.out.println("Status: Approved Officer");
+            System.out.println("Handling Project: " + handledProject.getName());
+        } else if (handledProject != null) { // If project is set but not approved, must be pending
+            System.out.println("Status: Pending Approval");
+            System.out.println("Pending for Project: " + handledProject.getName());
+        } else {
+            System.out.println("Status: Not assigned to handle any project.");
+        }
+        System.out.println("-----------------------");
+    }
+
+    /**
+     * Displays details of the project the officer is approved to handle.
+     */
+    public void viewProject() { // Renamed from viewProjectDetails for consistency? Keep as viewProject based on PDF.
+        if (isHandlingApproved && handledProject != null) {
+            System.out.println("\n--- Details for Handled Project ---");
+            // Call project's detail view, passing true because officer is staff
+            handledProject.viewAllDetails(true);
+        } else if (handledProject != null) {
+            System.out.println("Your registration for project '" + handledProject.getName() + "' is still pending approval.");
+        } else {
+            System.out.println("You are not currently approved to handle any project.");
+        }
+    }
+
+    /**
+     * Retrieves the list of applicants who are in 'Successful' state
+     * for the project this officer is handling.
+     * @return A List of bookable Applicant objects, or an empty list/null if none or not applicable.
+     */
+    public List<Applicant> getBookableApplicants() { 
+        if (!this.isHandlingApproved || this.handledProject == null) {
+            return new ArrayList<>(); // Return empty list
+        }
+    
+        List<Applicant> successfulList = this.handledProject.getSuccessfulApplicants(); // Assumes Project getter exists
+    
+        if (successfulList == null || successfulList.isEmpty()) {
+            return new ArrayList<>(); // Return empty list
+        }
+    
+        // Filter for those *actually* still in Successful state (not yet Booked)
+        List<Applicant> trulyBookable = new ArrayList<>();
+        for (Applicant app : successfulList) {
+            if (app != null && "Successful".equals(app.getAppStatus())) {
+                trulyBookable.add(app);
             }
         }
-        System.out.println("Project not found.");
+        return trulyBookable;
     }
-    
-    
-    public void successfulApplicants() {
-        for (Project project : appliedProjects) {
-        	if (project.equals(officerApplication)) {
-                List<Applicant> successfulList = new ArrayList<>(project.getSuccessfulApplicants());
-
-                for (Applicant applicant : successfulList) {
-                    String flatType = applicant.getTypeFlat();
-                    boolean booked = false;
-
-                    if (flatType.equals("2-Room") && project.getAvalNo2Room() > 0) {
-                    	project.setAvalNo2Room(project.getAvalNo2Room() - 1);
-                        booked = true;
-                    } else if (flatType.equals("3-Room") && project.getAvalNo3Room() > 0) {
-                    	project.setAvalNo3Room(project.getAvalNo3Room() - 1);
-                        booked = true;
-                    }
-
-                    if (booked) {
-                        applicant.setAppStatus("Booked");
-                        applicant.setApplied(true);
-                        applicant.setProject(project);
-                        project.updateBookedApplicants(applicant);
-                        System.out.println("Booked applicant: " + applicant.getName() + " (" + applicant.getNric() + ")");
-                    } else {
-                        System.out.println("No available flats of type: " + flatType + " for applicant " + applicant.getName());
-                    }
-                }
-                return;
-            }
+    /**
+     * Attempts to book a flat for the specified applicant in the handled project.
+     * Performs final availability checks and updates states if successful.
+     * @param applicantToBook The Applicant object selected for booking.
+     * @return true if booking was successful, false otherwise.
+     */
+    public boolean bookFlatForApplicant(Applicant applicantToBook) {
+        if (!this.isHandlingApproved || this.handledProject == null) {
+            System.out.println("Error: Officer not approved or not handling a project.");
+            return false;
         }
-        System.out.println("You are not assigned to this project.");
+        if (applicantToBook == null || !applicantToBook.getAppStatus().equals("Successful")) {
+            System.out.println("Error: Invalid applicant or applicant status is not 'Successful'.");
+            return false;
+        }
+        // Ensure the applicant belongs to the project the officer is handling
+        if (!this.handledProject.equals(applicantToBook.getProject())) {
+            System.out.println("Error: Applicant does not belong to the project you are handling.");
+            return false;
+        }
+
+        String flatTypeToBook = applicantToBook.getTypeFlat();
+
+        // Check final availability in the project
+        boolean roomAvailable = false;
+        if ("2-Room".equalsIgnoreCase(flatTypeToBook) && this.handledProject.getAvalNo2Room() > 0) {
+            roomAvailable = true;
+        } else if ("3-Room".equalsIgnoreCase(flatTypeToBook) && this.handledProject.getAvalNo3Room() > 0) {
+            roomAvailable = true;
+        }
+
+        if (roomAvailable) {
+            // Update applicant state
+            applicantToBook.setAppStatus("Booked");
+
+            // Delegate project state update (moving lists, decrementing count)
+            boolean bookingUpdateSuccess = this.handledProject.updateBookedApplicants(applicantToBook);
+
+            if (bookingUpdateSuccess) {
+                System.out.println("Successfully booked a " + flatTypeToBook + " flat for " + applicantToBook.getName() + ".");
+                System.out.println("Remaining " + flatTypeToBook + " units: " + ("2-Room".equalsIgnoreCase(flatTypeToBook) ? this.handledProject.getAvalNo2Room() : this.handledProject.getAvalNo3Room()));
+                return true; // Booking succeeded
+            } else {
+                System.out.println("Error updating project data during booking. Rolling back applicant status.");
+                applicantToBook.setAppStatus("Successful"); // Rollback status
+                return false; // Booking failed
+            }
+        } else {
+            System.out.println("Booking failed. No available " + flatTypeToBook + " units remaining for project '" + this.handledProject.getName() + "'.");
+            return false; // Booking failed
+        }
     }
-    
+
+    /**
+     * Generates a receipt for a booked applicant within the handled project.
+     */
     public void generateReceipt(String nric) {
-        for (Project project : appliedProjects) {
-        	if (!project.equals(officerApplication)) continue;;
+        if (!this.isHandlingApproved || this.handledProject == null) {
+            System.out.println("You must be approved and assigned to a project to generate receipts.");
+            return;
+        }
+        if (nric == null || nric.trim().isEmpty()){
+             System.out.println("Applicant NRIC cannot be empty.");
+             return;
+        }
 
-            for (Applicant applicant : project.getBookedApplicants()) {
-                if (applicant.getNric().equals(nric)) {
-                    System.out.println("----- RECEIPT -----");
-                    System.out.println("Name: " + applicant.getName());
-                    System.out.println("NRIC: " + applicant.getNric());
-                    System.out.println("Age: " + applicant.getAge());
-                    System.out.println("Marital Status: " + applicant.getMaritalStatus());
-                    System.out.println("Flat Type: " + applicant.getTypeFlat());
-                    System.out.println("Project: " + project.getName());
-                    System.out.println("-------------------");
-                    return;
+        // Find applicant in the project's booked list
+        List<Applicant> bookedList = this.handledProject.getBookedApplicants(); // Assumes getter exists
+        Applicant bookedApplicant = null;
+        if (bookedList != null) {
+            for (Applicant app : bookedList) {
+                if (app != null && nric.trim().equals(app.getNric())) {
+                    bookedApplicant = app;
+                    break;
                 }
             }
         }
-        System.out.println("No booked applicant found with NRIC: " + nric);
+
+        if (bookedApplicant != null) {
+            System.out.println("\n----- Booking Receipt -----");
+            System.out.println("Project: " + this.handledProject.getName());
+            System.out.println("Applicant Name: " + bookedApplicant.getName());
+            System.out.println("Applicant NRIC: " + bookedApplicant.getNric());
+            System.out.println("Age: " + bookedApplicant.getAge());
+            System.out.println("Marital Status: " + bookedApplicant.getMaritalStatus());
+            System.out.println("Booked Flat Type: " + bookedApplicant.getTypeFlat());
+            System.out.println("-------------------------");
+        } else {
+            System.out.println("No booked applicant found with NRIC '" + nric + "' for project '" + this.handledProject.getName() + "'.");
+        }
     }
-    
+
+    /**
+     * Override applyProject inherited from Applicant.
+     * Officers can apply for projects they are NOT handling, subject to applicant rules
+     * AND officer rules (not handling overlapping project).
+     */
     @Override
     public void applyProject(List<Project> availableProjects, String projectName, String chosenFlatType) {
-        if (projectName == null || chosenFlatType == null) {
-            System.out.println("Invalid project or flat type.");
-            return;
+        System.out.println("Officer attempting to apply as Applicant...");
+
+        if (projectName == null || chosenFlatType == null || projectName.trim().isEmpty() || chosenFlatType.trim().isEmpty()) {
+            System.out.println("Project name and flat type must be provided."); return;
         }
 
         Project selectedProject = null;
-        for (Project project : availableProjects) {
-            if (project.getName().equalsIgnoreCase(projectName)) {
-                selectedProject = project;
-                break;
+        for (Project proj : availableProjects) { // Search only available projects
+            if (proj != null && proj.getName().equalsIgnoreCase(projectName.trim())) {
+                selectedProject = proj; break;
             }
         }
 
         if (selectedProject == null) {
-            System.out.println("Project not found in available projects.");
-            return;
+            System.out.println("Project '" + projectName + "' not found in your list of available projects."); return;
         }
 
-        if (selectedProject.getPendingOfficerRegistrations().contains(this)) {
-            System.out.println("You are already registered as a pending officer for this project. Cannot apply.");
-            return;
+        // --- OFFICER SPECIFIC CHECKS ---
+        // 1. Cannot apply if currently handling/pending ANY project (even a different one)
+        if (this.handledProject != null) {
+             System.out.println("Error: As an Officer handling or pending approval for '" + this.handledProject.getName() + "', you cannot apply for other projects as an applicant.");
+             return;
+        }
+        // 2. Cannot apply for a project where they are pending registration (already covered by check 1)
+        // if (selectedProject.getPendingOfficerRegistrations() != null && selectedProject.getPendingOfficerRegistrations().contains(this)){...}
+
+        // --- APPLICANT CHECKS (using superclass logic directly) ---
+        // Re-check flat type availability and eligibility using superclass logic simulation
+        // This is needed because `availableProjects` only did initial filtering.
+
+        // Check availability of chosen flat type
+        if (chosenFlatType.equals("2-Room") && selectedProject.getAvalNo2Room() == 0) {
+            System.out.println("This project does not have available 2-Room flats."); return;
+        }
+        if (chosenFlatType.equals("3-Room") && selectedProject.getAvalNo3Room() == 0) {
+            System.out.println("This project does not have available 3-Room flats."); return;
         }
 
-        if (this.getOfficerApplication() != null && this.getOfficerApplication().equals(selectedProject)) {
-            System.out.println("You are already the officer of this project. Cannot apply.");
-            return;
-        }
-
-        if (this.isApplied()) {
-            System.out.println("You have already applied for a project.");
-            return;
-        }
-
+        // Check eligibility for chosen flat type
+        boolean eligible = false;
         if (this.getMaritalStatus().equals("Single") && this.getAge() >= 35) {
-            if (!chosenFlatType.equals("2-Room")) {
-                System.out.println("Singles (35+) can only apply for 2-Room flats.");
-                return;
-            }
+            if (chosenFlatType.equals("2-Room")) eligible = true;
+            else { System.out.println("Singles (35+) can only apply for 2-Room flats."); return; }
         } else if (this.getMaritalStatus().equals("Married") && this.getAge() >= 21) {
-            if (!chosenFlatType.equals("2-Room") && !chosenFlatType.equals("3-Room")) {
-                System.out.println("Invalid flat type. Married applicants can apply for 2-Room or 3-Room flats.");
-                return;
-            }
+            if (chosenFlatType.equals("2-Room") || chosenFlatType.equals("3-Room")) eligible = true;
+            else { System.out.println("Married applicants can apply for 2-Room or 3-Room flats only."); return; }
         } else {
-            System.out.println(this.getName() + " is not eligible to apply for a project.");
-            return;
+            System.out.println(this.getName() + " (Officer) is not eligible to apply based on age/marital status."); return;
         }
 
-        this.setProject(selectedProject);
-        this.setTypeFlat(chosenFlatType);
-        this.setAppStatus("Pending");
-        this.setApplied(true);
+        if (!eligible) {
+             // Should have been caught above, but final check
+             System.out.println("You are not eligible for the chosen flat type."); return;
+        }
 
-        selectedProject.updateArrOfApplicants(this);
-        System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.getTypeFlat() + " flat).");
+
+        // If all checks pass, proceed with updating the Applicant part of the Officer
+        System.out.println("Applying as Applicant...");
+        super.setTypeFlat(chosenFlatType);
+        super.setProject(selectedProject);
+        super.setAppStatus("Pending");
+        super.setApplied(true);
+        selectedProject.updateArrOfApplicants(this); // Add self to project's applicant list
+
+        System.out.println("You (Officer " + getName() + ") have successfully applied for the " + selectedProject.getName() + " project (" + super.getTypeFlat() + " flat).");
     }
-
-
 }

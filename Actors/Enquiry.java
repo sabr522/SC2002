@@ -1,9 +1,7 @@
 package Actors;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Enquiry {
 	private final int id;
