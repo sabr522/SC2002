@@ -1,6 +1,8 @@
 package Login;
 
 import java.util.Map;
+import java.util.regex.Pattern;
+
 import Actors.User;
 
 public class Login {
@@ -10,8 +12,15 @@ public class Login {
      * Returns the User object if successful, or null if credentials are invalid.
      */
     public static User authenticate(String nric, String password, Map<String, User> usersMap) {
-        User user = usersMap.get(nric);
+        
+        // pattern matching for NRIC
+        String nricRegex = "^[A-Za-z]\\d{7}[A-Za-z]$";
+        if (nric == null || !Pattern.matches(nricRegex, nric)) return null; 
+
+        // find user
+        User user = usersMap.get(nric.toUpperCase());
         if (user == null) return null;
+
         return user.getPassword().equals(password) ? user : null;
     }
 
