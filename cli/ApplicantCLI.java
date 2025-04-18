@@ -1,14 +1,13 @@
 package cli;
 
 import Actors.Applicant;
-import Actors.Officer;
-import Actors.Manager;
 import Actors.User;
 import Project.Project;
 import Services.EnquiryService;
-import cli.EnquiryCLI;
 import data.DataManager;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
@@ -25,21 +24,18 @@ public class ApplicantCLI {
     private DataManager dataManager;
     private final EnquiryService enquiryService;
     private final Map<String, Project> allProjectsMap;
-
- 
-
+    private final Map<String, User> allUsersMap;
     // --- Constructor for ApplicantCLI ---
     
     public ApplicantCLI(Applicant applicant, Scanner scanner, EnquiryService enquiryService, DataManager dataManager,
-            Map<String, Project> allProjectsMap) {
+            Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         this.applicant = applicant;
         this.scanner = scanner;
         this.dataManager = dataManager;
         this.enquiryService = enquiryService;
         this.allProjectsMap = allProjectsMap;
+        this.allUsersMap = allUsersMap;
     }
-    
-    
 
     public void showApplicantMenu() {
         int choice;
@@ -76,46 +72,150 @@ public class ApplicantCLI {
     
     // --- Handler Methods for Menu Options ---
     
-    private void handleViewAvailableProjects() {
-    	List<Project> available = applicant.viewAvailProjects(allProjectsMap);
-    	System.out.println("Available Projects:");
+    /**
+     * Retrieves and displays only the projects the applicant is eligible to apply for,
+     * showing detailed information and clearly indicating eligible flat types for each.
+     * Uses the eligibility logic defined in Applicant.viewAvailProjects for initial filtering.
+     * @return The list of available/eligible Project objects, or an empty list if none.
+     */
+    private List<Project> handleViewAvailableProjects() {
+        List<Project> potentiallyEligibleProjects = applicant.viewAvailProjects(allProjectsMap);
 
+        System.out.println("\n--- Available Projects You Are Eligible For ---");
+
+        if (potentiallyEligibleProjects.isEmpty()) {
+            if (!applicant.isApplied()) {
+                System.out.println("There are currently no available projects matching your initial eligibility criteria.");
+            }
+            return potentiallyEligibleProjects;
+        }
+
+        // Prepare the *final* list to display and return, after more specific flat type check
+        List<Project> displayableProjects = new ArrayList<>();
+        int displayIndex = 1;
         String status = applicant.getMaritalStatus();
         int age = applicant.getAge();
 
-        for (Project p : available) {
-        	
-            System.out.print("Project: " + p.getName());
+        for (Project p : potentiallyEligibleProjects) {
+            if (p == null) continue;
 
-            if (status.equals("Single") && age >= 35) 
-                System.out.println(" | 2-Room units: " + p.getAvalNo2Room());
-                
-            
-            else if (status.equals("Married") && age >= 21) {
-                System.out.println(" | 2-Room units: " + p.getAvalNo2Room());
-                System.out.println(" | 3-Room units: " + p.getAvalNo3Room());  
-            } 
-            
-            else  
-                System.out.println(" | Not eligible for any units.");
-            
-            System.out.println();
+            boolean canApply2Room = p.getAvalNo2Room() > 0;
+            boolean canApply3Room = p.getAvalNo3Room() > 0;
+            boolean eligibleForAnyFlatInThisProject = false; // Flag to check if we should display this project
+
+            List<String> unitsAvailableToApplicant = new ArrayList<>();
+
+            // Determine specific eligibility for *this* project's available flats
+            if (status.equals("Single") && age >= 35) {
+                if (canApply2Room) {
+                    unitsAvailableToApplicant.add("2-Room: " + p.getAvalNo2Room());
+                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                }
+                // Single cannot apply for 3-room, even if available
+            } else if (status.equals("Married") && age >= 21) {
+                if (canApply2Room) {
+                    unitsAvailableToApplicant.add("2-Room: " + p.getAvalNo2Room());
+                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                }
+                if (canApply3Room) {
+                    unitsAvailableToApplicant.add("3-Room: " + p.getAvalNo3Room());
+                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                }
+            }
+
+            // 3. Display details ONLY if they are eligible for at least one flat type in this specific project
+            if (eligibleForAnyFlatInThisProject) {
+                displayableProjects.add(p); // Add to the list that will be returned for selection
+
+                System.out.println("\n====================================");
+                System.out.println("Option #" + displayIndex++);
+                System.out.println("====================================");
+                try {
+                    // Call viewAllDetails for the eligible project
+                    p.viewAllDetails(false);
+
+                    System.out.println("-> Available Units You Can Apply For: [" + String.join(", ", unitsAvailableToApplicant) + "]");
+
+                    if (status.equals("Single") && age >= 35 && canApply3Room) {
+                        System.out.println("-> Note: 3-Room flats listed above are not available for Single applicants.");
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("Error displaying details for project: " + p.getName() + " - " + e.getMessage());
+                    System.out.println("Project Name: " + p.getName());
+                    System.out.println("(Error retrieving full details)");
+                }
+            }
+
+        } 
+
+        if (displayableProjects.isEmpty()) {
+            System.out.println("Although some projects are visible, none currently have flat types you are eligible to apply for.");
+        } else {
+            System.out.println("====================================");
         }
+
+        return displayableProjects; 
     }
 
+    /**
+     * Handles the process for an applicant applying for a project.
+     * Displays available projects, prompts for selection and flat type,
+     * then calls the applicant's application logic for final validation and state update.
+     */
     private void handleApplyForProject() {
-        List<Project> available = applicant.viewAvailProjects(allProjectsMap);
-        if (available.isEmpty()) {
-        	System.out.println("No available projects for you.");
-        	return;
+        // 1. Display available projects AND get the list for selection
+        List<Project> availableProjects = handleViewAvailableProjects(); 
+
+        // 2. Check if there are projects to apply for or if already applied
+        if (availableProjects.isEmpty()) {
+            return; // Exit if no projects or already applied
+        }
+        System.out.println("0. Cancel Application"); 
+
+        // 3. Get user's project choice by number
+        int projectChoice = -1;
+        Project selectedProject = null;
+        while (true) {
+            System.out.print("Enter the number of the project you want to apply for: ");
+            projectChoice = readIntInput(); 
+            if (projectChoice == 0) {
+                System.out.println("Application cancelled.");
+                return;
+            }
+            if (projectChoice > 0 && projectChoice <= availableProjects.size()) {
+                selectedProject = availableProjects.get(projectChoice - 1); // Adjust index
+                if (selectedProject != null) {
+                    break; // Valid project selected
+                } else {
+                    System.out.println("Invalid project entry selected. Please try again.");
+                }
+            } else {
+                System.out.println("Invalid project number. Please enter a number between 0 and " + availableProjects.size() + ".");
+            }
         }
 
-        System.out.print("Enter the project name you want to apply for: ");
-        String projectName = scanner.nextLine();
-        System.out.print("Enter flat type (2-Room/3-Room): ");
-        String flatType = scanner.nextLine().trim();
+        // 4. Get user's desired flat type (Let applyProject validate eligibility/availability)
+        String chosenFlatType = null;
+        while(chosenFlatType == null) {
+            System.out.println("\nSelected Project: " + selectedProject.getName());
+            System.out.print("Enter desired flat type (2-Room or 3-Room, or 0 to cancel): ");
+            String inputType = scanner.nextLine().trim();
 
-        applicant.applyProject(available, projectName, flatType);
+            if ("0".equals(inputType)) {
+                System.out.println("Application cancelled.");
+                return;
+            } else if ("2-Room".equalsIgnoreCase(inputType) || "2".equals(inputType)) {
+                chosenFlatType = "2-Room";
+            } else if ("3-Room".equalsIgnoreCase(inputType) || "3".equals(inputType)) {
+                chosenFlatType = "3-Room";
+            } else {
+                System.out.println("Invalid input. Please enter '2-Room', '3-Room', '2', '3', or '0'.");
+            }
+        }
+
+        // 5. Final elgiibility check
+        applicant.applyProject(availableProjects, selectedProject.getName(), chosenFlatType);
     }
 
     private void handleViewApplication() {
@@ -135,12 +235,83 @@ public class ApplicantCLI {
         applicant.withdrawApp();
     }
 
+    /**
+     * Handles interactions related to enquiries for the applicant.
+     * Allows selecting a project by index to manage enquiries for.
+     */
     private void handleEnquiryActions() {
-        System.out.print("Enter the project name you want to enquire about: ");
-        String projectName = scanner.nextLine();
-    	EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, applicant.getNric(), false, false); // false = isStaff
-        enquiryCLI.showEnquiryMenu(projectName);
-   }
+        System.out.println("\n--- Enquiry Management ---");
+
+        // 1. Consolidate list of projects applicant might enquire about
+        List<Project> enquiryProjectOptions = new ArrayList<>();
+        Map<Integer, String> optionMap = new HashMap<>();
+        int currentIndex = 1;
+
+        // Add available projects
+        List<Project> available = applicant.getProjectsVisibleForEnquiry(allProjectsMap);
+        if (!available.isEmpty()) {
+            System.out.println("Available Projects:");
+            for (Project p : available) {
+                if (p != null) {
+                    System.out.printf("%d. %s (%s)%n", currentIndex, p.getName(), p.getNeighbourhood());
+                    optionMap.put(currentIndex, p.getName());
+                    enquiryProjectOptions.add(p); 
+                    currentIndex++;
+                }
+            }
+        }
+
+        // Add applied project (if different and exists)
+        Project appliedProject = applicant.getProject();
+        if (appliedProject != null && !enquiryProjectOptions.contains(appliedProject)) {
+            System.out.println("\nProject You Applied For:");
+            System.out.printf("%d. %s (%s)%n", currentIndex, appliedProject.getName(), appliedProject.getNeighbourhood());
+            optionMap.put(currentIndex, appliedProject.getName());
+            currentIndex++;
+        }
+
+        if (optionMap.isEmpty()) {
+            System.out.println("No projects available or applied for to manage enquiries.");
+            System.out.println("You can still view/manage your previously submitted enquiries.");
+        }
+
+        System.out.println("\n0. Manage/View My Enquiries (General)");
+        if(optionMap.isEmpty()){
+            System.out.println("   (Only option available)");
+        }
+
+
+        // 2. Get user choice by index
+        int choice = -1;
+        String targetProjectName = null; // Will be null for general enquiries
+
+        if (!optionMap.isEmpty()) { // Only ask for prject selection if there are options
+            while (true) {
+                System.out.print("Project number to manage enquiries for (or 0 for general): ");
+                choice = readIntInput();
+                if (choice == 0) {
+                    break; // User chose general
+                }
+                if (optionMap.containsKey(choice)) {
+                    targetProjectName = optionMap.get(choice);
+                    System.out.println("Selected project: " + targetProjectName);
+                    break; // Valid project selected
+                } else {
+                    System.out.println("Invalid selection. Please enter a number from the list or 0.");
+                }
+            }
+        } else {
+            // Only option is 0 (General)
+            choice = 0;
+        }
+
+
+        // 3. Instantiate EnquiryCLI and show menu
+        System.out.println("Launching Enquiry Menu" + (targetProjectName != null ? " for project " + targetProjectName : " (General)"));
+        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, applicant.getNric(), false, false,
+                                                this.scanner, this.allUsersMap, allProjectsMap); // Pass scanner and map
+        enquiryCLI.showEnquiryMenu(targetProjectName); // Pass project name context (can be null)
+    }
 
     private int readIntInput() {
         int i = -1;        // Default to an invalid value

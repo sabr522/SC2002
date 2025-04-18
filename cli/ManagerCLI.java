@@ -6,17 +6,15 @@ import Actors.Applicant;
 import Actors.Officer;
 import Project.Project;
 import Services.EnquiryService;
-import cli.EnquiryCLI; 
 import data.DataManager;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map; // Needed to accept the main data maps
 import java.util.Scanner;
+import java.util.HashMap;
 import java.util.InputMismatchException;
-import java.util.ArrayList;
 import java.util.stream.Collectors; // Added for cleaner filtering
 
 /**
@@ -95,10 +93,8 @@ public class ManagerCLI {
                     case 9:
                         System.out.println("Enquiry handling not implemented in this CLI.");
                         // Pass the Manager object (which is a User) to the EnquiryCLI
-
-                        // TODO: Fix up enquiryCLI for manager
-                        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, manager.getNric(), true, true);
-                        enquiryCLI.showEnquiryMenu();
+                        manageAllEnquiries(); 
+                        ;
                         break;
                     case 0:
                         System.out.println("Preparing to logout manager " + manager.getName() + "...");
@@ -123,7 +119,61 @@ public class ManagerCLI {
                 .collect(Collectors.toList()); // Collect results into a list
     }
 
+    /**
+     * Handles viewing/replying to enquiries, allowing manager to select a managed project by index or view all.
+     */
+    private void manageAllEnquiries() {
+        System.out.println("\n--- Enquiry Management (Manager) ---");
 
+        // 1. Get and display projects managed by this manager with indices
+        List<Project> managedProjects = getProjectsManagedByThisManager();
+        Map<Integer, String> optionMap = new HashMap<>(); 
+        int currentIndex = 1;
+
+        if (managedProjects.isEmpty()) {
+            System.out.println("You are not currently managing any projects.");
+        } else {
+            System.out.println("Projects you manage:");
+            for (Project p : managedProjects) {
+                if (p != null) {
+                    System.out.printf("%d. %s (%s)%n", currentIndex, p.getName(), p.getNeighbourhood());
+                    optionMap.put(currentIndex, p.getName());
+                    currentIndex++;
+                }
+            }
+        }
+        System.out.println("\n0. Manage/View All Enquiries (Unfiltered)");
+
+        // 2. Get user choice by index
+        int choice = -1;
+        String targetProjectName = null; 
+
+        if (!optionMap.isEmpty()) { 
+            while (true) {
+                System.out.println("Enter project number to filter enquiries (or 0 for All): ");
+                choice = readIntInput();
+                if (choice == 0) {
+                    break;
+                }
+                if (optionMap.containsKey(choice)) {
+                    targetProjectName = optionMap.get(choice);
+                    System.out.println("Selected project: " + targetProjectName);
+                    break; 
+                } else {
+                    System.out.println("Invalid selection. Please enter a number from the list or 0.");
+                }
+            }
+        } else {
+            System.out.println("Viewing options for all enquiries as no specific projects are managed.");
+            choice = 0;
+        }
+
+        // 3. Instantiate EnquiryCLI and show menu
+        System.out.println("Launching Enquiry Menu" + (targetProjectName != null ? " for project " + targetProjectName : " (All Projects View)"));
+        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, manager.getNric(), true, true, 
+                                                this.scanner, this.allUsersMap, allProjectsMap);
+        enquiryCLI.showEnquiryMenu(targetProjectName); 
+    }
     // --- Handler Methods for Menu Options ---
 
     /**
@@ -162,7 +212,7 @@ public class ManagerCLI {
             // This makes it immediately visible in the current session.
             allProjectsMap.put(newProject.getName(), newProject);
             System.out.println("Project '" + newProject.getName() + "' created successfully IN MEMORY.");
-             System.out.println("Changes will be saved on logout.");
+            System.out.println("Changes will be saved on logout.");
         } else {
             // Error message (e.g., date clash) should have been printed by manager.createProject
             System.err.println("Failed to create project (check console for specific error like date clash).");
@@ -566,7 +616,6 @@ public class ManagerCLI {
     }
 
     private boolean readYesNoInput() {
-        // Re-use readBooleanInput logic for simplicity, as it handles yes/no
         return readBooleanInput();
     }
 
@@ -653,33 +702,33 @@ public class ManagerCLI {
         for (int i = 0; i < officers.size(); i++) {
              Officer o = officers.get(i);
              // Fetch full name from allUsersMap for better display
-             User u = (o != null && o.getNric() != null) ? allUsersMap.get(o.getNric()) : null;
-             String displayName = (u != null) ? u.getName() : (o != null ? "Officer NRIC: " + o.getNric() : "Invalid Officer Entry");
-             System.out.println((i + 1) + ". " + displayName);
+            User u = (o != null && o.getNric() != null) ? allUsersMap.get(o.getNric()) : null;
+            String displayName = (u != null) ? u.getName() : (o != null ? "Officer NRIC: " + o.getNric() : "Invalid Officer Entry");
+            System.out.println((i + 1) + ". " + displayName);
         }
         System.out.println("0. Cancel");
 
-         int choice;
-         while (true) {
-             System.out.print("Enter choice: ");
-             choice = readIntInput();
-             if (choice >= 0 && choice <= officers.size()) {
-                 break;
-             } else {
-                 System.out.println("Invalid choice. Please enter a number between 0 and " + officers.size() + ".");
-             }
-         }
+        int choice;
+        while (true) {
+            System.out.print("Enter choice: ");
+            choice = readIntInput();
+            if (choice >= 0 && choice <= officers.size()) {
+                break;
+            } else {
+                System.out.println("Invalid choice. Please enter a number between 0 and " + officers.size() + ".");
+            }
+        }
 
         if (choice == 0) {
             System.out.println("Selection cancelled.");
             return null;
         }
-         Officer selected = officers.get(choice - 1);
-         if (selected == null) {
-             System.err.println("Error: Selected officer entry is invalid.");
-             return null;
-         }
-         return selected;
+        Officer selected = officers.get(choice - 1);
+        if (selected == null) {
+            System.err.println("Error: Selected officer entry is invalid.");
+            return null;
+        }
+        return selected;
     }
 
 
@@ -696,46 +745,35 @@ public class ManagerCLI {
                  continue;
             }
             // Fetch full name from allUsersMap for better display
-             User u = (a.getNric() != null) ? allUsersMap.get(a.getNric()) : null;
-             String displayName = (u != null) ? u.getName() : "Applicant NRIC: " + a.getNric();
-
-            // Get project name if available (Applicant object should store this)
-             // Assuming Applicant class has getProjectName() or similar after loading
-            String projectName = "N/A";
-            // This depends on Applicant storing the project *name* or the *object*
-            // Let's assume a method getAppliedProjectName() exists or we fetch it.
-            // Project appliedProject = a.getProject(); // Need getProject() in Applicant
-            // if (appliedProject != null) projectName = appliedProject.getName();
-            // For now, using placeholder logic as Applicant structure isn't fully defined here
-            // String projectName = (a.viewAppliedProject() != null ? a.viewAppliedProject().getName() : "N/A"); // Original logic relied on viewAppliedProject()
+            User u = (a.getNric() != null) ? allUsersMap.get(a.getNric()) : null;
+            String displayName = (u != null) ? u.getName() : "Applicant NRIC: " + a.getNric();
 
             // Simpler display for now:
-             System.out.println((i + 1) + ". " + displayName + " (NRIC: " + a.getNric() + ")"); // Added NRIC for clarity
-             // System.out.println((i + 1) + ". " + a.getName() + " (Project: " + (a.getProject() != null ? a.getProject().getName() : "N/A") + ")"); // Original format based on potentially missing methods
+            System.out.println((i + 1) + ". " + displayName + " (NRIC: " + a.getNric() + ")"); // Added NRIC for clarity
         }
         System.out.println("0. Cancel");
 
-         int choice;
-         while (true) {
-             System.out.print("Enter choice: ");
-             choice = readIntInput();
-             if (choice >= 0 && choice <= applicants.size()) {
-                 break;
-             } else {
-                 System.out.println("Invalid choice. Please enter a number between 0 and " + applicants.size() + ".");
-             }
-         }
+        int choice;
+        while (true) {
+            System.out.print("Enter choice: ");
+            choice = readIntInput();
+            if (choice >= 0 && choice <= applicants.size()) {
+                break;
+            } else {
+                System.out.println("Invalid choice. Please enter a number between 0 and " + applicants.size() + ".");
+            }
+        }
 
         if (choice == 0) {
             System.out.println("Selection cancelled.");
             return null;
         }
-         Applicant selected = applicants.get(choice - 1);
-         if (selected == null) {
-              System.err.println("Error: Selected applicant entry is invalid.");
-             return null;
-         }
-         return selected;
+        Applicant selected = applicants.get(choice - 1);
+        if (selected == null) {
+            System.err.println("Error: Selected applicant entry is invalid.");
+            return null;
+        }
+        return selected;
     }
 
 } 
