@@ -2,13 +2,8 @@ package Services;
 
 import java.util.*;
 
-import Actors.User; // Base class
-import Actors.Applicant;
-import Actors.Officer;
-import Actors.Manager;
 import Actors.Enquiry;
 import Actors.Reply;
-import Project.Project;
 
 public class EnquiryService {
 	private final Map<Integer, Enquiry> enquiryMap;
