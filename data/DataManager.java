@@ -205,7 +205,7 @@ public class DataManager {
                     case "officer":
                          // Officer status (approved/pending) is determined later from project_officers.csv
                     	user = new Officer(name, nric, password, maritalStatus, age);
-                         ((Officer)user).setStatus(false); // Default to not approved until checked
+                         ((Officer)user).setHandlingApproved(false); // Default to not approved until checked
                         break;
                     case "applicant":
                         // Application details (project, status, etc.) loaded later from applications.csv
@@ -379,6 +379,8 @@ public class DataManager {
                 if (user instanceof Officer) { // Check if user is actually an Officer
                     Officer officer = (Officer) user;
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
+                    officer.setHandlingApproved(isApproved);
+                    officer.setHandledProject(project);
                     
                     if (isApproved) {
                         project.updateArrOfOfficers(project.getCreatorName(), officer); //Adds approved officers 
@@ -386,10 +388,6 @@ public class DataManager {
                         project.updateArrOfPendingOfficers(officer); //Adds pending officers
                         System.out.println("Note: Logic to add Officer to Project's *pending* list needs implementation in Project class for NRIC " + officerNric);
                     }
-
-                    // Also set the status on the Officer object itself
-                    officer.setStatus(isApproved);
-
                     assignmentsLoaded++;
                 } else {
                     // User exists but is not an Officer
