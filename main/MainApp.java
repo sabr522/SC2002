@@ -16,7 +16,6 @@ import Services.EnquiryService;
 
 import java.util.Map;
 import java.util.Scanner;
-import java.util.InputMismatchException;
 
 /**
  * Main application class for the BTO Management System.
@@ -83,6 +82,12 @@ public class MainApp {
 
                 case 2:   
                     boolean passwordChanged = LoginCLI.changePassword(scanner, currentUser);
+                    if (passwordChanged) {
+                        currentUser = null;
+                        System.out.println("Saving updated user data...");
+                        saveAllData();
+                        System.out.println("User data saved.");
+                    }
                     break;
 
                 case 0:
@@ -206,7 +211,8 @@ public class MainApp {
                                                         scanner, 
                                                         enquiryService, 
                                                         dataManager, 
-                                                        allProjectsMap);
+                                                        allProjectsMap,
+                                                        allUsersMap);
                         applicantCLI.showApplicantMenu();
                     } else { 
                         System.err.println("Error: Role/Type mismatch for Applicant."); 
