@@ -25,8 +25,16 @@ public class ApplicantCLI {
     private final EnquiryService enquiryService;
     private final Map<String, Project> allProjectsMap;
     private final Map<String, User> allUsersMap;
-    // --- Constructor for ApplicantCLI ---
     
+    /**
+     * Constructs a CLI handler for the given applicant.
+     * @param applicant Logged-in applicant
+     * @param scanner Input scanner
+     * @param enquiryService Enquiry handling service
+     * @param dataManager Data persistence utility
+     * @param allProjectsMap All loaded projects
+     * @param allUsersMap All loaded users
+     */
     public ApplicantCLI(Applicant applicant, Scanner scanner, EnquiryService enquiryService, DataManager dataManager,
             Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         this.applicant = applicant;
@@ -37,6 +45,9 @@ public class ApplicantCLI {
         this.allUsersMap = allUsersMap;
     }
 
+    /**
+     * Displays the interactive applicant menu.
+     */
     public void showApplicantMenu() {
         int choice;
         do {
@@ -90,7 +101,6 @@ public class ApplicantCLI {
             return potentiallyEligibleProjects;
         }
 
-        // Prepare the *final* list to display and return, after more specific flat type check
         List<Project> displayableProjects = new ArrayList<>();
         int displayIndex = 1;
         String status = applicant.getMaritalStatus();
@@ -101,37 +111,34 @@ public class ApplicantCLI {
 
             boolean canApply2Room = p.getAvalNo2Room() > 0;
             boolean canApply3Room = p.getAvalNo3Room() > 0;
-            boolean eligibleForAnyFlatInThisProject = false; // Flag to check if we should display this project
+            boolean eligibleForAnyFlatInThisProject = false; 
 
             List<String> unitsAvailableToApplicant = new ArrayList<>();
 
-            // Determine specific eligibility for *this* project's available flats
             if (status.equals("Single") && age >= 35) {
                 if (canApply2Room) {
                     unitsAvailableToApplicant.add("2-Room: " + p.getAvalNo2Room());
-                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                    eligibleForAnyFlatInThisProject = true; 
                 }
-                // Single cannot apply for 3-room, even if available
+               
             } else if (status.equals("Married") && age >= 21) {
                 if (canApply2Room) {
                     unitsAvailableToApplicant.add("2-Room: " + p.getAvalNo2Room());
-                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                    eligibleForAnyFlatInThisProject = true;
                 }
                 if (canApply3Room) {
                     unitsAvailableToApplicant.add("3-Room: " + p.getAvalNo3Room());
-                    eligibleForAnyFlatInThisProject = true; // Eligible for this project
+                    eligibleForAnyFlatInThisProject = true; 
                 }
             }
 
-            // 3. Display details ONLY if they are eligible for at least one flat type in this specific project
             if (eligibleForAnyFlatInThisProject) {
-                displayableProjects.add(p); // Add to the list that will be returned for selection
+                displayableProjects.add(p); 
 
                 System.out.println("\n====================================");
                 System.out.println("Option #" + displayIndex++);
                 System.out.println("====================================");
                 try {
-                    // Call viewAllDetails for the eligible project
                     p.viewAllDetails(false);
 
                     System.out.println("-> Available Units You Can Apply For: [" + String.join(", ", unitsAvailableToApplicant) + "]");
@@ -164,16 +171,13 @@ public class ApplicantCLI {
      * then calls the applicant's application logic for final validation and state update.
      */
     private void handleApplyForProject() {
-        // 1. Display available projects AND get the list for selection
         List<Project> availableProjects = handleViewAvailableProjects(); 
 
-        // 2. Check if there are projects to apply for or if already applied
         if (availableProjects.isEmpty()) {
-            return; // Exit if no projects or already applied
+            return; 
         }
         System.out.println("0. Cancel Application"); 
 
-        // 3. Get user's project choice by number
         int projectChoice = -1;
         Project selectedProject = null;
         while (true) {
@@ -184,9 +188,9 @@ public class ApplicantCLI {
                 return;
             }
             if (projectChoice > 0 && projectChoice <= availableProjects.size()) {
-                selectedProject = availableProjects.get(projectChoice - 1); // Adjust index
+                selectedProject = availableProjects.get(projectChoice - 1); 
                 if (selectedProject != null) {
-                    break; // Valid project selected
+                    break; 
                 } else {
                     System.out.println("Invalid project entry selected. Please try again.");
                 }
@@ -195,7 +199,6 @@ public class ApplicantCLI {
             }
         }
 
-        // 4. Get user's desired flat type (Let applyProject validate eligibility/availability)
         String chosenFlatType = null;
         while(chosenFlatType == null) {
             System.out.println("\nSelected Project: " + selectedProject.getName());
@@ -214,15 +217,19 @@ public class ApplicantCLI {
             }
         }
 
-        // 5. Final elgiibility check
         applicant.applyProject(availableProjects, selectedProject.getName(), chosenFlatType);
     }
 
+    /**
+     * Shows the applied project details and current application status.
+     */
     private void handleViewApplication() {
         System.out.println(applicant.viewAppliedProject());
     }
 
-
+    /**
+     * Submits a request to book a flat.
+     */
     private void handleBookFlat() {
         
         if (applicant.getProject() != null) {
@@ -231,6 +238,10 @@ public class ApplicantCLI {
             System.out.println("You have not applied to any project yet.");
         }
     }
+    
+    /**
+     * Initiates withdrawal request.
+     */
     private void handleWithdrawApplication() {
         applicant.withdrawApp();
     }
@@ -242,12 +253,10 @@ public class ApplicantCLI {
     private void handleEnquiryActions() {
         System.out.println("\n--- Enquiry Management ---");
 
-        // 1. Consolidate list of projects applicant might enquire about
         List<Project> enquiryProjectOptions = new ArrayList<>();
         Map<Integer, String> optionMap = new HashMap<>();
         int currentIndex = 1;
 
-        // Add available projects
         List<Project> available = applicant.getProjectsVisibleForEnquiry(allProjectsMap);
         if (!available.isEmpty()) {
             System.out.println("Available Projects:");
@@ -261,7 +270,6 @@ public class ApplicantCLI {
             }
         }
 
-        // Add applied project (if different and exists)
         Project appliedProject = applicant.getProject();
         if (appliedProject != null && !enquiryProjectOptions.contains(appliedProject)) {
             System.out.println("\nProject You Applied For:");
@@ -281,54 +289,53 @@ public class ApplicantCLI {
         }
 
 
-        // 2. Get user choice by index
         int choice = -1;
-        String targetProjectName = null; // Will be null for general enquiries
+        String targetProjectName = null; 
 
-        if (!optionMap.isEmpty()) { // Only ask for prject selection if there are options
+        if (!optionMap.isEmpty()) { 
             while (true) {
                 System.out.print("Project number to manage enquiries for (or 0 for general): ");
                 choice = readIntInput();
                 if (choice == 0) {
-                    break; // User chose general
+                    break; 
                 }
                 if (optionMap.containsKey(choice)) {
                     targetProjectName = optionMap.get(choice);
                     System.out.println("Selected project: " + targetProjectName);
-                    break; // Valid project selected
+                    break; 
                 } else {
                     System.out.println("Invalid selection. Please enter a number from the list or 0.");
                 }
             }
         } else {
-            // Only option is 0 (General)
             choice = 0;
         }
 
-
-        // 3. Instantiate EnquiryCLI and show menu
         System.out.println("Launching Enquiry Menu" + (targetProjectName != null ? " for project " + targetProjectName : " (General)"));
         EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, applicant.getNric(), false, false,
-                                                this.scanner, this.allUsersMap, allProjectsMap); // Pass scanner and map
-        enquiryCLI.showEnquiryMenu(targetProjectName); // Pass project name context (can be null)
+                                                this.scanner, this.allUsersMap, allProjectsMap); 
+        enquiryCLI.showEnquiryMenu(targetProjectName); 
     }
 
+    /**
+     * Reads and validates integer input from console.
+     * @return A valid integer from user.
+     */
     private int readIntInput() {
-        int i = -1;        // Default to an invalid value
-         while (true) {    // Loop until valid input is received
+        int i = -1;        
+         while (true) {   
              try {
-                 String line = scanner.nextLine().trim(); // Read whole line
+                 String line = scanner.nextLine().trim(); 
                  if (line.isEmpty()) {
                       System.out.println("Input cannot be empty. Please enter a number.");
-                      System.out.print("Enter choice: "); // Re-prompt if needed by context
+                      System.out.print("Enter choice: "); 
                       continue;
                  }
                  i = Integer.parseInt(line);
-                 break;    // Exit loop if parsing is successful
+                 break;    
              } catch (InputMismatchException | NumberFormatException e) { 
-                 // scanner.nextLine(); // Consume the invalid input - already handled by reading line
                  System.out.println("Invalid input. Please enter a valid number.");
-                 System.out.print("Enter choice: "); // Re-prompt if needed 
+                 System.out.print("Enter choice: "); 
                  
              }
         }
