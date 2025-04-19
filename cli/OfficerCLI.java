@@ -12,6 +12,10 @@ import java.util.Scanner;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * CLI for the Officer role.
+ * Provides functions for officers to register for projects, book flats, and manage enquiries.
+ */
 public class OfficerCLI {
     private final Officer officer; // The specific Officer object
     private final Scanner scanner; // Use scanner passed from MainApp
@@ -20,6 +24,15 @@ public class OfficerCLI {
     private final Map<String, Project> allProjectsMap; // Needed for registration
     private final Map<String, User> allUsersMap; // Needed for registration checks
 
+    /**
+     * Constructs the OfficerCLI session.
+     * @param officer The logged-in officer
+     * @param scanner Input scanner
+     * @param dataManager Data persistence utility
+     * @param enquiryService Service for managing enquiries
+     * @param allProjectsMap All loaded projects
+     * @param allUsersMap All loaded users
+     */
     public OfficerCLI(Officer officer, Scanner scanner, DataManager dataManager,
                       EnquiryService enquiryService,
                       Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
@@ -31,6 +44,9 @@ public class OfficerCLI {
         this.allUsersMap = allUsersMap;
     }
 
+        /**
+     * Shows the interactive menu for Officer role.
+     */
     public void showOfficerMenu() {
         int choice = -1;
         while (choice != 0) {
