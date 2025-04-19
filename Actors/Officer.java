@@ -75,15 +75,6 @@ public class Officer extends Applicant {
             return;
         }
 
-        // TODO : Maybe not this logic??
-        // // 2. Check application period of the target project
-        // LocalDate now = LocalDate.now();
-        // if (projectToRegister.getAppOpeningDate() == null || projectToRegister.getAppClosingDate() == null ||
-        //     now.isBefore(projectToRegister.getAppOpeningDate()) || now.isAfter(projectToRegister.getAppClosingDate())) {
-        //     System.out.println("Project '" + projectName + "' is not open for officer registration at this time.");
-        //     return;
-        // }
-
         // 3. Check if applied as Applicant for THIS project
         // Access Applicant fields directly due to inheritance
         if (super.isApplied() && projectToRegister.equals(super.getProject())) {
@@ -123,15 +114,15 @@ public class Officer extends Applicant {
     /**
      * Displays the Officer's profile information.
      */
-    public void showProfile() { // Renamed from showOfficerProfile for consistency if needed
+    public void showProfile() { 
         System.out.println("\n--- Officer Profile ---");
         System.out.println("Name: " + getName());
         System.out.println("NRIC: " + getNric());
-        System.out.println("Role: " + getRole()); // Should now correctly show "Officer"
+        System.out.println("Role: " + getRole()); 
         if (isHandlingApproved && handledProject != null) {
             System.out.println("Status: Approved Officer");
             System.out.println("Handling Project: " + handledProject.getName());
-        } else if (handledProject != null) { // If project is set but not approved, must be pending
+        } else if (handledProject != null) { 
             System.out.println("Status: Pending Approval");
             System.out.println("Pending for Project: " + handledProject.getName());
         } else {
@@ -143,10 +134,9 @@ public class Officer extends Applicant {
     /**
      * Displays details of the project the officer is approved to handle.
      */
-    public void viewProject() { // Renamed from viewProjectDetails for consistency? Keep as viewProject based on PDF.
+    public void viewProject() { 
         if (isHandlingApproved && handledProject != null) {
             System.out.println("\n--- Details for Handled Project ---");
-            // Call project's detail view, passing true because officer is staff
             handledProject.viewAllDetails(true);
         } else if (handledProject != null) {
             System.out.println("Your registration for project '" + handledProject.getName() + "' is still pending approval.");
@@ -168,7 +158,7 @@ public class Officer extends Applicant {
         List<Applicant> successfulList = this.handledProject.getSuccessfulApplicants(); // Assumes Project getter exists
     
         if (successfulList == null || successfulList.isEmpty()) {
-            return new ArrayList<>(); // Return empty list
+            return new ArrayList<>();
         }
     
         // Filter for those *actually* still in Successful state (not yet Booked)

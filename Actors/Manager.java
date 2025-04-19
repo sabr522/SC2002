@@ -60,7 +60,7 @@ public class Manager extends User { // Extend the abstract User class
         // Perform clash check internally using the provided list
         if (isAnyProjectClashing(projectsToCheck, appOpeningDate, appClosingDate, null)) { // Pass null for skipProjectName
             System.err.println("Error: Application period clashes with an existing project managed by " + this.getName() + ".");
-            return null; // Return null to indicate failure due to clash
+            return null;
         }
 
         // Pass inherited name (this.getName) as creatorName
@@ -153,7 +153,7 @@ public class Manager extends User { // Extend the abstract User class
      */
     private boolean isAnyProjectClashing(List<Project> projectsToCheck, LocalDate appOpeningDate, LocalDate appClosingDate, String skipProjectName) {
         if (appOpeningDate == null || appClosingDate == null || projectsToCheck == null) {
-            return false; // Cannot clash if dates are incomplete or list is null
+            return false;
         }
         for (Project existingProject : projectsToCheck) {
             if (existingProject == null) continue;
@@ -167,7 +167,7 @@ public class Manager extends User { // Extend the abstract User class
                 return true; // Found a clash
             }
         }
-        return false; // No clashes found
+        return false;
     }
     /**
      * Deletes a project if it was created by this manager.
@@ -453,6 +453,7 @@ public class Manager extends User { // Extend the abstract User class
     /**
      * Private helper to handle the logic when a withdrawal request is accepted.
      * Updates project lists and applicant status.
+     * Assumes necessary methods exist in Project and Applicant.
      *
      * @param applicant The applicant whose withdrawal is accepted.
      */
@@ -460,17 +461,17 @@ public class Manager extends User { // Extend the abstract User class
         Objects.requireNonNull(applicant, "Applicant cannot be null for withdrawal acceptance");
         Project project = applicant.getProject(); 
 
+        boolean projectUpdated = false;
         if (project != null) {
-             // Add applicant to the project's list of withdrawal requests 
-             project.updateWithdrawRequests(applicant); 
-             System.out.println("Note: Room increment logic upon withdrawal acceptance needs implementation in Project class.");
+            projectUpdated = project.processAcceptedWithdrawal(applicant);
+            if (!projectUpdated) {
+                System.err.println("Warning: Project state may not have been fully updated for withdrawal acceptance of " + applicant.getNric());
+            }
         } else {
-            // This case should ideally be caught earlier, but log warning if it happens.
             System.err.println("Warning: Applicant '" + applicant.getName() + "' has null project during withdrawal acceptance processing.");
         }
-
-        applicant.setAppStatus("Withdrawn"); // Set status
-        applicant.setWithdrawalStatus(true);  // Indicate withdrawal was processed positively (accepted)
+        applicant.setAppStatus("Withdrawn");
+        applicant.setWithdrawalStatus(true);
     }
 
     /**
@@ -517,8 +518,8 @@ public class Manager extends User { // Extend the abstract User class
             return report; // Return empty report
         }
 
-        // Get the list of successful applicants for this project
-        List<Applicant> applicantsToReport = project.getSuccessfulApplicants(); 
+        // Get the list of all applicants for this project
+        List<Applicant> applicantsToReport = project.getAllApplicants(); 
         if (applicantsToReport == null || applicantsToReport.isEmpty()) {
             System.out.println("No successful applicants found for project '" + project.getName() + "' to generate a report.");
             return report; // Return empty report
@@ -541,19 +542,19 @@ public class Manager extends User { // Extend the abstract User class
                         include = true;
                         break;
                     case "married":
-                        include = applicantMaritalStatus.equals("married");
+                        include = applicantMaritalStatus.equalsIgnoreCase("married");
                         break;
                     case "unmarried":
-                        include = !applicantMaritalStatus.equals("married") && !applicantMaritalStatus.isEmpty(); // Check not empty too
+                        include = !applicantMaritalStatus.equalsIgnoreCase("married") && !applicantMaritalStatus.isEmpty(); // Check not empty too
                         break;
                     case "flat2room":
-                        include = flatType.equals("2-room"); // Match exact format used in project/applicant
+                        include = flatType.equalsIgnoreCase("2-room"); // Match exact format used in project/applicant
                         break;
                     case "flat3room":
-                        include = flatType.equals("3-room"); // Match exact format
+                        include = flatType.equalsIgnoreCase("3-room"); // Match exact format
                         break;
                     case "married_flat2room":
-                        include = applicantMaritalStatus.equals("married") && flatType.equals("2-room");
+                        include = applicantMaritalStatus.equalsIgnoreCase("married") && flatType.equals("2-room");
                         break;
                     // Add more filters as needed
                     default:
@@ -564,13 +565,14 @@ public class Manager extends User { // Extend the abstract User class
 
                 // If applicant matches filter, format and add to report
                 if (include) {
-                    String reportEntry = String.format("Project: %s, Flat Type: %s, Age: %d, Marital Status: %s, Name: %s, NRIC: %s",
-                                                       project.getName(),
-                                                       applicant.getTypeFlat(), // Original case for display
-                                                       applicant.getAge(),
-                                                       applicant.getMaritalStatus(), // Original case
+                    String reportEntry = String.format("Name: %s, NRIC: %s, Age: %d, Marital Status: %s, Flat Type: %s, Status: %s",
                                                        applicant.getName(),
-                                                       applicant.getNric()); // Added NRIC for completeness
+                                                       applicant.getNric(),
+                                                       applicant.getAge(),
+                                                       applicant.getMaritalStatus(),
+                                                       applicant.getTypeFlat(),
+                                                       applicant.getAppStatus()                                             
+                                                       ); 
                     report.add(reportEntry);
                 }
             } catch (Exception e) {

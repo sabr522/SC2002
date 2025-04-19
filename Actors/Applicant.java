@@ -82,13 +82,40 @@ public class Applicant extends User implements ApplicantRole {
     }
     
    
+    /**
+     * Sets the application status. Validates against allowed statuses.
+     * If the status is set to "Withdrawn", resets other application-specific fields
+     * on the Applicant object to allow re-application.
+     * @param appStatus The new application status.
+     */
     public void setAppStatus(String appStatus) {
-        List<String> validStatuses = Arrays.asList("Pending", "Unsuccessful", "Successful", "Booked");
-        if (!validStatuses.contains(appStatus)) {
-            throw new IllegalArgumentException("Invalid status: " + appStatus);
+        if (appStatus == null) {
+            this.appStatus = null;
+            setApplied(false); 
+            setProject(null); 
+            this.typeFlat = null;
+            setWithdrawalStatus(false);
+            return;
         }
+
+        List<String> validStatuses = Arrays.asList("Pending", "Unsuccessful", "Successful", "Booked", "Withdrawn");
+
+        if (!validStatuses.contains(appStatus)) {
+            throw new IllegalArgumentException("Invalid application status provided: " + appStatus);
+        }
+
+        // Set the new status
         this.appStatus = appStatus;
+
+        // If the status is set to Withdrawn, reset other relevant applicant fields
+        if ("Withdrawn".equals(this.appStatus)) {
+            this.setApplied(false);         // Allow applying again
+            this.setProject(null);          // Disassociate from the withdrawn project object
+            this.typeFlat = null;                   // Clear flat type
+            this.setWithdrawalStatus(false); // Withdrawal process is complete
+        }
     }
+    
     /**
      * Gets a list of projects that are visible to this applicant based on
      * project visibility settings and basic applicant eligibility (age, marital status),
@@ -249,21 +276,34 @@ public class Applicant extends User implements ApplicantRole {
 
     
     public void withdrawApp() {
-        if (this.applied && (this.appStatus.equals("Successful") || this.appStatus.equals("Booked"))) {
-            if (this.withdrawStatus) {
-                System.out.println(this.getName() + " has already requested a withdrawal.");
-                return;
-            }
-            
-
-            if (project !=null)           	
-                project.updateWithdrawRequests(this);
-            
-            System.out.println(this.getName() + " has requested to withdraw from the project. Awaiting manager's approval.");
-        } 
-        else {
+        // Check if eligible to withdraw (Applied AND Successful/Booked)
+        if (!this.applied || !("Successful".equals(this.appStatus) || "Booked".equals(this.appStatus))) {
             System.out.println("You can only request withdrawal if your application is Successful or Booked.");
+            if (this.applied) System.out.println("Your current status: " + (appStatus != null ? appStatus : "N/A"));
+            else System.out.println("You have not applied for a project.");
+            return;
         }
-    }
+
+        // Check if already requested
+        if (this.withdrawStatus) {
+            System.out.println("You have already submitted a withdrawal request for project '" + (project != null ? project.getName() : "Unknown") + "'. Awaiting manager's decision.");
+            return;
+        }
+
+        // Check if project link exists
+        if (project == null) {
+            System.out.println("Error: Cannot request withdrawal - project link missing.");
+            return;
+        }
+
+        // Update project's withdrawal request list
+        if (project.updateWithdrawRequests(this)) {
+            this.setWithdrawalStatus(true); // <<< --- CRITICAL FIX: Set flag HERE ---
+            System.out.println("Withdrawal requested for project '" + project.getName() + "'. Awaiting manager's approval.");
+        } else {
+            // This might happen if updateWithdrawRequests fails (e.g., applicant not found in source lists)
+            System.out.println("Failed to submit withdrawal request to the project. Please check your application status.");
+        }
+            }
 
 }
