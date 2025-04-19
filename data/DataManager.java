@@ -49,7 +49,9 @@ public class DataManager {
     private static final String ENQUIRIES_HEADER = "EnquiryID,SubmitterNRIC,ProjectName,EnquiryContent"; 
     private static final String REPLIES_HEADER = "EnquiryID,ReplyID,ResponderNRIC,ReplyContent"; 
 
-    // --- Constructor ---
+    /**
+     * Constructs the DataManager and ensures required files exist.
+     */
     public DataManager() {
         // Ensure data files exist on initialization (optional but recommended)
         ensureFileExists(USERS_CSV_PATH, USERS_HEADER);
@@ -172,6 +174,7 @@ public class DataManager {
     /**
      * Loads all users (Applicants, Officers, Managers) from users.csv.
      * @return A Map where the key is NRIC and the value is the User object.
+     * @throws IOException If the file is missing or unreadable.
      */
     public Map<String, User> loadUsers() throws IOException {
         Map<String, User> users = new HashMap<>();
@@ -239,6 +242,7 @@ public class DataManager {
      * Loads the core project data from projects.csv.
      * Does NOT load related data like flats, officers, or applicants yet.
      * @return A Map where the key is ProjectName and the value is the Project object.
+     * @throws IOException If the file cannot be read.
      */
     public Map<String, Project> loadProjectsCore() throws IOException {
         Map<String, Project> projects = new HashMap<>();
@@ -296,6 +300,7 @@ public class DataManager {
      * Loads flat information and adds it to the corresponding Project objects.
      * Must be called *after* loadProjectsCore.
      * @param projects The map of projects loaded by loadProjectsCore.
+     * @throws IOException If the file cannot be read.
      */
     public void loadProjectFlats(Map<String, Project> projects) throws IOException {
         List<String[]> csvData = readCsvFile(PROJECT_FLATS_CSV_PATH);
@@ -347,6 +352,7 @@ public class DataManager {
      * Must be called *after* loadProjectsCore and loadUsers.
      * @param projects The map of projects loaded by loadProjectsCore.
      * @param users The map of users loaded by loadUsers.
+     * @throws IOException If the file cannot be read.
      */
     public void loadProjectOfficers(Map<String, Project> projects, Map<String, User> users) throws IOException {
         List<String[]> csvData = readCsvFile(PROJECT_OFFICERS_CSV_PATH);
@@ -407,6 +413,7 @@ public class DataManager {
      * Must be called *after* loadProjectsCore and loadUsers.
      * @param projects Map of projects loaded by loadProjectsCore.
      * @param users Map of users loaded by loadUsers.
+     * @throws IOException If the file cannot be read.
      */
     public void loadApplications(Map<String, Project> projects, Map<String, User> users) throws IOException {
         List<String[]> csvData = readCsvFile(APPLICATIONS_CSV_PATH);
@@ -472,6 +479,7 @@ public class DataManager {
      * Populates the passed EnquiryService instance.
      * Resets static ID counters in Enquiry and Reply classes.
      * @param enquiryService The EnquiryService to populate.
+     * @throws IOException If reading the file fails.
      */
     public void loadEnquiries(EnquiryService enquiryService) throws IOException {
         if (enquiryService == null) {
@@ -535,6 +543,7 @@ public class DataManager {
     /**
      * Saves all user data back to users.csv.
      * @param users The map of all users (NRIC -> User object).
+     * @throws IOException If writing to file fails.
      */
     public void saveUsers(Map<String, User> users) throws IOException {
         List<String[]> csvData = new ArrayList<>();
@@ -560,6 +569,7 @@ public class DataManager {
      * Saves all project-related data (core, flats, officers, applications).
      * Takes the authoritative map of projects as input.
      * @param projects The map of all Project objects.
+     * @throws IOException If any write operation fails.
      */
     public void saveAllProjectData(Map<String, Project> projects) throws IOException {
         saveProjectsCore(projects);
@@ -714,6 +724,7 @@ public class DataManager {
      * Saves all Enquiries and their Replies to CSV files.
      * Retrieves data from the EnquiryService.
      * @param enquiryService The service holding the enquiry data.
+     * @throws IOException If saving the file fails.
      */
     public void saveEnquiries(EnquiryService enquiryService) throws IOException {
         if (enquiryService == null) {
@@ -778,6 +789,10 @@ public class DataManager {
     /**
      * Gets a list of applicants with "Pending" status for projects created by a specific manager.
      * Assumes Project class has a method getApplicantsByStatus(String status).
+     * @param managerName Manager's name.
+     * @param allProjects Project map.
+     * @param allUsers User map.
+     * @return List of pending applicants.
      */
     public List<Applicant> getAllPendingApplicantsForManager(String managerName,
                                                              Map<String, Project> allProjects, Map<String, User> allUsers) {
@@ -806,6 +821,10 @@ public class DataManager {
     /**
      * Gets a list of officers with "Pending" status for projects created by a specific manager.
      * Assumes Project class has a method getOfficersByStatus(String status) or similar.
+     * @param managerName Manager's name.
+     * @param allProjects All project records.
+     * @param allUsers All users.
+     * @return List of pending officers.
      */
     public List<Officer> getAllPendingOfficersForManager(String managerName,
                                                          Map<String, Project> allProjects, Map<String, User> allUsers) {
@@ -835,6 +854,10 @@ public class DataManager {
     /**
      * Gets a list of applicants who have requested withdrawal for projects created by a specific manager.
      * Assumes Project class has a method getWithdrawReq().
+     * @param managerName Name of manager.
+     * @param allProjects Project map.
+     * @param allUsers User map.
+     * @return List of applicants with withdrawal requests.
      */
     public List<Applicant> getAllWithdrawalApplicantsForManager(String managerName,
                                                                Map<String, Project> allProjects, Map<String, User> allUsers) {
