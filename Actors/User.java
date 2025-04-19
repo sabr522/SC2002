@@ -37,18 +37,30 @@ public abstract class User {
     }
 
     // --- Public Getters ---
+    /** 
+     * Returns the name of the user.
+     * @return User's name */
     public String getName() {
         return name;
     }
 
+    /** 
+     * Return the NRIC of the user.
+     * @return User's NRIC */
     public String getNric() {
         return nric;
     }
 
+    /** 
+     * Returns the age of the user.
+     * @return User's age */
     public int getAge() {
         return age;
     }
 
+    /** 
+     * Returns the marital status of the user.
+     * @return User's marital status */
     public String getMaritalStatus() {
         return maritalStatus;
     }
@@ -61,6 +73,9 @@ public abstract class User {
         return password;
     }
 
+    /**
+     * Returns the role assigned to the user (e.g., Applicant, Officer, Manager). 
+     * @return User's role */
     public String getRole() {
         return role;
     }
@@ -96,7 +111,11 @@ public abstract class User {
         );
     }
 
-    // Helper to handle potential commas or quotes in fields for CSV saving
+    /**
+     * Helper to handle potential commas or quotes in fields for CSV saving.
+     * @param field Input field
+     * @return Escaped field
+     */  
     protected String escapeCsvField(String field) {
         if (field == null) return "";
         if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
@@ -106,6 +125,11 @@ public abstract class User {
         return field;
     }
 
+    /**
+     * Returns a string representation of the user object.
+     * Exclude password from default toString for security/privacy.
+     * @return User summary
+     */
     @Override
     public String toString() {
         // Exclude password from default toString for security/privacy
@@ -118,7 +142,11 @@ public abstract class User {
                '}';
     }
 
-    // --- equals() and hashCode() based on NRIC (unique identifier) ---
+    /**
+     * Compares users by NRIC (unique identifier).
+     * @param o Object to compare
+     * @return true if NRICs match
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -127,6 +155,10 @@ public abstract class User {
         return Objects.equals(nric, user.nric); // NRIC should be unique
     }
 
+    /**
+     * Generates hash code based on NRIC (unique identifier).
+     * @return Hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(nric); // NRIC is the unique identifier
