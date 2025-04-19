@@ -9,7 +9,10 @@ import java.util.Set;
 import Actors.Applicant;
 import Actors.Officer; 
 
-
+/**
+ * Represents a BTO housing project.
+ * Tracks application periods, flat availability, and registration states.
+ */
 public class Project {
 	
 	private String name;
@@ -34,7 +37,17 @@ public class Project {
 	
 
 	
-	//Constructor
+    /**
+     * Constructs a project with all details and initializes availability.
+     * @param name Project name
+	 * @param visibility Whether the project is publicly visible
+	 * @param creatorName Name of the project creator (Manager)
+	 * @param neighbourhood Location of the project
+	 * @param appOpeningDate Start date for applications
+	 * @param appClosingDate End date for applications
+	 * @param no2Room Number of 2-room flats available at launch
+	 * @param no3Room Number of 3-room flats available at launch
+     */
 	public Project(String name, Boolean visibility, String creatorName, String neighbourhood, LocalDate appOpeningDate, LocalDate appClosingDate, int no2Room, int no3Room ) {
 		
 		this.name=name;
@@ -52,53 +65,93 @@ public class Project {
 	
 	
 	//Getter Methods
+	/**
+	 * Gets the name of the project. 
+	 * @return The name of the project */
 	public String getName() {
 		return this.name;
 	}
 	
+	 /** 
+	  * Checks whether the project is visible to applicants.
+	  * @return Whether the project is visible */
 	public Boolean getVisibility() {
 		return this.visibility;
 	}
 	
+	 /** 
+	  * Gets the name of the manager who created this project.
+	  * @return The name of the project creator */
 	public String getCreatorName() {
 		return this.creatorName;
 	}
 	
+	/** 
+	 * Gets the neighbourhood where the project is located.
+	 * @return The neighbourhood where the project is located */
 	public String getNeighbourhood() {
 		return this.neighbourhood;
 	}
 	
+	/** 
+	 * Gets the start date of the application period.
+	 * @return The application start date */
 	public LocalDate getAppOpeningDate() {
 		return this.appOpeningDate;
 	}
 	
+	 /** 
+	  *  Gets the end date of the application period.
+	  * @return The application closing date */
 	public LocalDate getAppClosingDate() {
 		return this.appClosingDate;
 	}
 	
+	/** 
+	 * Gets the total number of 2-room flats originally offered.
+	 * @return The number of 2-room flats available at launch */
 	public int getNo2Room() {
 		return this.no2Room;
 	}
 	
+	/** 
+	 * Gets the total number of 3-room flats originally offered.
+	 * @return The number of 3-room flats available at launch */
 	public int getNo3Room() {
 		return this.no3Room;
 	}
 	
+	/** 
+	 * Gets the current number of available 2-room flats.
+	 * @return The current number of available 2-room flats */
 	public int getAvalNo2Room() {
 		return this.avalNo2Room;
 	}
 	
+	/** 
+	 * Gets the current number of available 3-room flats.
+	 * @return The current number of available 3-room flats */
 	public int getAvalNo3Room() {
 		return this.avalNo3Room;
 	}
 
+	/** 
+	 *  Gets the list of officers pending approval.
+	 * @return List of officers pending approval */
 	public List<Officer> getPendingOfficerRegistrations(){
 		return new ArrayList<>(this.arrOfPendingOfficers);
 	}
 
+	/** 
+	 * Gets the list of approved officers.
+	 * @return List of approved officers */
 	public List<Officer> getArrOfOfficers(){
 		return new ArrayList<>(this.arrOfOfficers);
 	}
+
+	/** 
+	 * Gets all applicants associated with this project, across all statuses.
+	 * @return All applicants across all statuses */
 	public List<Applicant> getAllApplicants() {
 		Set<Applicant> uniqueApplicants = new HashSet<>(); 
 
@@ -130,33 +183,47 @@ public class Project {
 		return new ArrayList<>(uniqueApplicants);
 	}
 	
+	/** 
+	 * Gets the list of applicants whose applications are still pending.
+	 * @return Pending applicants list */
 	public List<Applicant> getArrOfApplicants(){
 		return this.arrOfApplicants;
 	}
 	
-	
+	/** 
+	 * Gets the list of applicants whose applications were successful.
+	 * @return List of successful applicants */
 	public List<Applicant> getSuccessfulApplicants(){
 		return this.successfulApplicants;
 	}
 	
-	
+	/** 
+	 * Gets the list of applicants whose applications were unsuccessful.
+	 * @return List of unsuccessful applicants */
 	public List<Applicant> getUnsuccessfulApplicants(){
 		return this.unsuccessfulApplicants;
 	}
 	
-	
+	/** 
+	 * Gets the list of applicants who have successfully booked flats.
+	 * @return List of booked applicants */
 	public List<Applicant> getBookedApplicants(){
 		return this.bookedApplicants;
 	}
 	
-	
+	/** 
+	 * Gets the list of applicants who have requested to withdraw.
+	 * @return List of applicants with withdrawal requests */
 	public List<Applicant> getWithdrawReq(){
 		return this.withdrawRequests;
 	}
 	
 
 	
-	//Prints details
+    /**
+     * Displays all project details. Includes officer and visibility info if user is staff.
+     * @param isStaff Whether the user is a staff member
+     */
 	public void viewAllDetails(boolean isStaff) {
 		System.out.println("Project Name: " + this.name);
 		System.out.println("Manager Name: " + this.creatorName);
@@ -177,7 +244,11 @@ public class Project {
 	
 	
 	
-	//Setter Methods
+	/**
+     * Updates the project name.
+     * @param creatorName Name of the manager attempting update
+     * @param name New project name
+     */
 	public void setName(String creatorName, String name) {
 		if (creatorName.equals(this.creatorName)){
 			this.name=name;
@@ -187,11 +258,20 @@ public class Project {
 		}
 		
 	}
-	
+
+	  /**
+     * Sets the creator name.
+     * @param creatorName New creator name
+     */
 	public void setCreatorName(String creatorName) {
 		this.creatorName=creatorName;
 	}
-	
+
+    /**
+     * Updates the project's visibility setting.
+     * @param creatorName Name of the manager attempting update
+     * @param visibility New visibility value
+     */
 	public void setVisibility(String creatorName, Boolean visibility) {
 		if (creatorName.equals(this.creatorName)){
 			this.visibility=visibility;
@@ -200,7 +280,12 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}
 	}
-	
+
+    /**
+     * Updates the neighbourhood.
+     * @param creatorName Manager verifying authority
+     * @param neighbourhood New neighbourhood name
+     */
 	public void setNeighbourhood(String creatorName, String neighbourhood) {
 		if (creatorName.equals(this.creatorName)){
 			this.neighbourhood=neighbourhood;
@@ -209,7 +294,12 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}
 	}
-	
+
+    /**
+     * Updates application opening date.
+     * @param creatorName Verifier
+     * @param appOpeningDate New opening date
+     */
 	public void setAppOpeningDate(String creatorName, LocalDate appOpeningDate) {
 		if (creatorName.equals(this.creatorName)){
 			this.appOpeningDate=appOpeningDate;
@@ -218,7 +308,12 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}	
 	}
-	
+
+    /**
+     * Updates application closing date.
+     * @param creatorName Verifier
+     * @param appClosingDate New closing date
+     */
 	public void setAppClosingDate(String creatorName, LocalDate appClosingDate) {
 		if (creatorName.equals(this.creatorName)){
 			this.appClosingDate=appClosingDate;
@@ -227,15 +322,28 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}
 	}
-	
+
+    /**
+     * Directly sets available 2-room flats.
+     * @param avalNo2Room Count
+     */
 	public void setAvalNo2Room(int avalNo2Room) {
 			this.avalNo2Room=avalNo2Room;
 	}
-	
+
+    /**
+     * Directly sets available 3-room flats.
+     * @param avalNo3Room Count
+     */
 	public void setAvalNo3Room(int avalNo3Room) {
 			this.avalNo3Room=avalNo3Room;
 	}
-	
+
+    /**
+     * Updates initial 2-room flat count.
+     * @param creatorName Verifier
+     * @param no2Room Count
+     */
 	public void setNo2Room(String creatorName, int no2Room) {
 		if (creatorName.equals(this.creatorName)){
 			this.no2Room=no2Room;
@@ -244,7 +352,12 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}
 	}
-	
+
+    /**
+     * Updates initial 3-room flat count.
+     * @param creatorName Verifier
+     * @param no3Room Count
+     */
 	public void setNo3Room(String creatorName, int no3Room) {
 		if (creatorName.equals(this.creatorName)){
 			this.no3Room=no3Room;
@@ -253,7 +366,12 @@ public class Project {
 			System.out.println("Unauthorised access!");
 		}
 	}
-	
+
+    /**
+     * Adds officer to pending list.
+     * @param officer Officer object
+     * @return true if added
+     */
 	public boolean updateArrOfPendingOfficers (Officer officer) {
      if (officer != null && !this.arrOfPendingOfficers.contains(officer)) {
           return this.arrOfPendingOfficers.add(officer);
@@ -304,7 +422,11 @@ public class Project {
 			return false;
 		}
 	}
-	
+
+    /**
+     * Routes applicant to correct internal list based on status.
+     * @param applicant Applicant instance
+     */
 	public void addApplicantToCorrectList(Applicant applicant){
 		switch(applicant.getAppStatus()){
 			case "Pending":
@@ -329,11 +451,18 @@ public class Project {
 		}
 	}
 
-
+    /**
+     * Adds to general applicant list.
+     * @param applicant New applicant
+     */
 	public void updateArrOfApplicants(Applicant applicant) {
 			this.arrOfApplicants.add(applicant);
 	}
-	
+
+    /**
+     * Moves from pending to successful list.
+     * @param applicant Confirmed applicant
+     */
 	public void updateSuccessfulApplicants(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
 			String targetNRIC=applicant.getNric();
@@ -343,7 +472,11 @@ public class Project {
 			}
 		}	
 	}
-	
+
+    /**
+     * Moves from pending to unsuccessful list.
+     * @param applicant Rejected applicant
+     */
 	public void updateUnsuccessfulApplicants(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
 			String targetNRIC=applicant.getNric();
@@ -353,7 +486,12 @@ public class Project {
 			}
 		}		
 	}
-	
+
+    /**
+     * Books a unit and updates internal states.
+     * @param applicant The applicant being booked
+     * @return true if successful
+     */
 	public boolean updateBookedApplicants(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
 			String targetNRIC=applicant.getNric();
@@ -386,7 +524,10 @@ public class Project {
 		return false;
 	}
 	
-	
+    /**
+     * Adds applicant to withdrawal queue.
+     * @param applicant Applicant requesting withdrawal
+     */	
 	public boolean updateWithdrawRequests(Applicant applicant) {
         if (applicant == null || applicant.getNric() == null) {
             System.err.println("WARN: updateWithdrawRequests called with null applicant or NRIC.");
@@ -486,7 +627,11 @@ public class Project {
              return false;
         }
     }
-	
+
+	    /**
+     * Converts withdrawn applicant to unsuccessful.
+     * @param applicant Applicant to update
+     */
 	public void updateWithdrawToUnsuccessful(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
 			String targetNRIC=applicant.getNric();
