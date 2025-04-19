@@ -110,7 +110,7 @@ public class ManagerCLI {
         } while (choice != 0);
     }
 
-    // --- Helper Method to Filter Projects by Current Manager ---
+    /** @return List of projects managed by this manager */
     private List<Project> getProjectsManagedByThisManager() {
         String currentManagerName = manager.getName(); // Get manager's name
         return allProjectsMap.values().stream() // Stream all projects from the main map
