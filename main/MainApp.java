@@ -25,17 +25,20 @@ import java.util.Scanner;
  */
 public class MainApp {
 
-    // Core application components and state
     private static Scanner scanner = new Scanner(System.in);
     private static DataManager dataManager = new DataManager();
     private static EnquiryService enquiryService = new EnquiryService();
     private static Map<String, User> allUsersMap = null;
     private static Map<String, Project> allProjectsMap = null;
 
+    /**
+     * Application startup and main control loop.
+     * Loads data, handles login, and routes to user role menus.
+     * @param args Standard command line arguments
+     */
     public static void main(String[] args) {
         System.out.println("===== Welcome to the BTO Management System =====");
 
-        // 1. Load All Application Data
         if (!loadAllData()) {
             System.err.println("Critical error loading data. Exiting application.");
             scanner.close();
@@ -43,22 +46,19 @@ public class MainApp {
         }
         System.out.println("Data loaded successfully.");
 
-        User currentUser = null; // Track the currently logged-in user
+        User currentUser = null; 
 
-        // Main Application Loop
         while (true) {
 
-            // If no user is logged in, initiate the login process via LoginCLI
             if (currentUser == null) {
                 System.out.println("\n--- Initiating Login Process ---");
 
                 currentUser = LoginCLI.loginUser(scanner, allUsersMap);
                 
                 if (currentUser == null) {
-                    // User chose to exit the application from the login screen
                     System.out.println("Exiting BTO Management System as requested from login.");
-                    saveAllData(); // Attempt saving before final exit
-                    break; // Exit the main application loop
+                    saveAllData(); 
+                    break; 
                 }
             }
 
@@ -74,10 +74,7 @@ public class MainApp {
 
             switch (choice) {
                 case 1:
-                    // Launch the role-specific CLI (This logic remains in MainApp)
                     launchRoleCLI(currentUser);
-                    // After returning from CLI, loop continues showing Post-Login Menu.
-                    // User needs to explicitly choose Logout (0).
                     break;
 
                 case 2:   
@@ -91,26 +88,23 @@ public class MainApp {
                     break;
 
                 case 0:
-                    // Handle logout
                     System.out.println("Logging out...");
-                    saveAllData(); // Save all data before clearing user
+                    saveAllData(); 
                     System.out.println("Data saved.");
-                    currentUser = null; // Clear the current user
+                    currentUser = null; 
                     System.out.println("Logged out successfully. Returning to Login screen...");
-                    // Loop will continue and trigger the login prompt again
                     break;
 
                 default:
                     System.out.println("Invalid choice. Please try again.");
             }
 
-        } // End Main Application Loop (while true)
+        } 
 
-        scanner.close(); // Close scanner only when application loop terminates
+        scanner.close();
         System.out.println("Application closed.");
     }
 
-    // --- Data Loading and Saving ---
 
     /**
      * Loads all necessary data using the DataManager.
@@ -118,7 +112,6 @@ public class MainApp {
      * @return true if loading was successful, false otherwise.
      */
     private static boolean loadAllData() {
-        // (Implementation remains the same as provided previously)
         try {
             System.out.println("Loading users...");
             allUsersMap = dataManager.loadUsers();
@@ -148,7 +141,6 @@ public class MainApp {
      * Saves all application data (Users and Projects) using the DataManager.
      */
     private static void saveAllData() {
-        // (Implementation remains the same as provided previously)
          if (allUsersMap == null || allProjectsMap == null) {
              System.err.println("Warning: Data maps are not initialized. Skipping save operation.");
              return;
@@ -166,15 +158,12 @@ public class MainApp {
         }
     }
 
-    // --- Role Launching Logic ---
 
     /**
      * Launches the appropriate Command Line Interface (CLI) based on the user's role.
      * @param user The currently logged-in User object.
      */
     private static void launchRoleCLI(User user) {
-        // (Implementation remains the same as provided previously)
-        // This part correctly stays in MainApp as it orchestrates which UI to show.
         String role = user.getRole().toLowerCase();
         System.out.println("\nLaunching " + user.getRole() + " Menu...");
         try {
@@ -230,15 +219,12 @@ public class MainApp {
     }
 
 
-    // --- Input Helper ---
-
     /**
      * Helper method to read an integer input from the console robustly.
      * @param prompt The message to display before reading input.
      * @return The valid integer entered by the user.
      */
     private static int readIntInput(String prompt) {
-        // (Implementation remains the same as provided previously)
          int input = -1;
         while (true) {
             try {
