@@ -93,11 +93,11 @@ public class Project {
 	}
 
 	public List<Officer> getPendingOfficerRegistrations(){
-		return this.arrOfPendingOfficers;
+		return new ArrayList<>(this.arrOfPendingOfficers);
 	}
 
 	public List<Officer> getArrOfOfficers(){
-		return this.arrOfOfficers;
+		return new ArrayList<>(this.arrOfOfficers);
 	}
 	public List<Applicant> getAllApplicants() {
 		Set<Applicant> uniqueApplicants = new HashSet<>(); 
@@ -261,22 +261,47 @@ public class Project {
      return false; 
 	}
 
-	public void updateArrOfOfficers(String creatorName, Officer officer) {
-		if (creatorName.equals(this.creatorName)){
-			if (this.arrOfPendingOfficers.remove(officer))
-			{
-				if (arrOfOfficers.size() < 10) {
-					this.arrOfOfficers.add(officer);
-				} else {
-					System.out.println("Cannot add more officers. Maximum reached.");
-				}
-				
-			}
-			else{System.out.println("Officer does not exist.");}
-			
+	/**
+	 * Adds an Officer to the approved list for this project, removing them
+	 * from the pending list if present. Checks authorization and limits.
+	 * Designed to work correctly both during loading and runtime approval.
+	 * @param creatorName The NRIC/Name of the manager attempting the action (for auth check during runtime).
+	 * @param officer The Officer to approve/add.
+	 * @return true if the officer is successfully in the approved list, false otherwise.
+	 */
+	public boolean updateArrOfOfficers(String creatorName, Officer officer) {
+		// Authorization check
+		if (!creatorName.equals(this.creatorName)) {
+			System.out.println("Unauthorised access to update officers for project " + this.name);
+			return false;
 		}
-		else{
-			System.out.println("Unauthorised access!");
+		if (officer == null) {
+			System.out.println("Cannot add null officer to approved list.");
+			return false;
+		}
+
+		// 1. Remove from pending list 
+		boolean wasPending = this.arrOfPendingOfficers.removeIf(p -> p != null && p.equals(officer));
+
+		// 2. Check if already approved
+		if (this.arrOfOfficers.contains(officer)) {
+			return true; 
+		}
+
+		// 3. Check limit
+		int MAX_OFFICERS = 10; // Define limit
+		if (this.arrOfOfficers.size() >= MAX_OFFICERS) {
+			System.out.println("Cannot add officer " + officer.getNric() + ". Maximum officer limit (" + MAX_OFFICERS + ") reached for project " + this.name + ".");
+			return false; // Failed due to limit
+		}
+
+		// 4. Add to approved list
+		if (this.arrOfOfficers.add(officer)) {
+			return true;
+		} else {
+			System.err.println("ERROR: Failed to add officer " + officer.getNric() + " to approved list for unknown reason.");
+			if(wasPending) this.arrOfPendingOfficers.add(officer);
+			return false;
 		}
 	}
 	
@@ -362,26 +387,105 @@ public class Project {
 	}
 	
 	
-	public void updateWithdrawRequests(Applicant applicant) {
-		if (applicant != null && applicant.getNric() != null) { 
-			String targetNRIC=applicant.getNric();
-			if (successfulApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
-			{
-				this.withdrawRequests.add(applicant);
-			}
+	public boolean updateWithdrawRequests(Applicant applicant) {
+        if (applicant == null || applicant.getNric() == null) {
+            System.err.println("WARN: updateWithdrawRequests called with null applicant or NRIC.");
+            return false;
+        }
+        String targetNRIC = applicant.getNric();
 
-			else if (bookedApplicants.removeIf(a -> a.getNric().equals(targetNRIC)))
-			{
-				this.withdrawRequests.add(applicant);
-				if (applicant.getTypeFlat().equals("2Room")){
-					this.avalNo2Room +=1;
-				}
-				else{
-					this.avalNo3Room +=1;
-				}
-			}
-		}	
+        // Check if already requested withdrawal
+        if (this.withdrawRequests != null && this.withdrawRequests.contains(applicant)){
+            return true; 
+        }
+
+        boolean moved = false;
+
+        // Try removing from Successful list
+        if (this.successfulApplicants != null && this.successfulApplicants.removeIf(a -> a != null && targetNRIC.equals(a.getNric()))) {
+            moved = true;
+        }
+        // Try removing from Booked list (only if not found in successful)
+        else if (this.bookedApplicants != null && this.bookedApplicants.removeIf(a -> a != null && targetNRIC.equals(a.getNric()))) {
+             moved = true;
+             String flatType = applicant.getTypeFlat();
+              if (flatType != null) {
+                 if ("2-Room".equals(flatType)){
+                     this.avalNo2Room +=1;
+                      System.out.println("DEBUG: Incremented avalNo2Room to " + this.avalNo2Room + " due to booked withdrawal request.");
+                 }
+                 else if ("3-Room".equals(flatType)){
+                     this.avalNo3Room +=1;
+                     System.out.println("DEBUG: Incremented avalNo3Room to " + this.avalNo3Room + " due to booked withdrawal request.");
+                 } else {
+                      System.err.println("WARN: Booked applicant " + targetNRIC + " withdrawing had unexpected flat type '" + flatType + "'. Room count not adjusted.");
+                 }
+             } else {
+                 System.err.println("WARN: Booked applicant " + targetNRIC + " withdrawing had null flat type. Room count not adjusted.");
+             }
+        }
+
+        // If successfully removed from either list, add to withdrawRequests
+        if (moved) {
+             if (this.withdrawRequests != null) {
+                 if (!this.withdrawRequests.contains(applicant)){
+                      this.withdrawRequests.add(applicant);
+                 }
+                 return true;
+             } else {
+                  System.err.println("ERROR: withdrawRequests list is null in project " + this.name);
+                  return false;
+             }
+        } else {
+            System.err.println("Warning: Applicant " + targetNRIC + " requesting withdrawal not found in successful or booked lists for project " + this.name + ". Cannot process request.");
+            return false;
+        }
 	}
+	    /**
+     * Processes an accepted withdrawal request for an applicant.
+     * Removes the applicant from the withdrawRequests list and adds them
+     * to the unsuccessfulApplicants list to finalize their journey for this application.
+     * Room count should have been adjusted when the withdrawal was initially requested if they were booked.
+     * @param applicant The applicant whose withdrawal was accepted.
+     * @return true if the applicant was successfully moved from requests to unsuccessful, false otherwise.
+     */
+    public boolean processAcceptedWithdrawal(Applicant applicant) {
+        if (applicant == null) {
+            System.err.println("Cannot process accepted withdrawal for null applicant.");
+            return false;
+        }
+
+        // 1. Remove from withdrawRequests list
+        boolean removedFromWithdraw = false;
+        if (this.withdrawRequests != null) {
+            removedFromWithdraw = this.withdrawRequests.removeIf(a -> a != null && a.equals(applicant));
+        }
+
+        if (!removedFromWithdraw) {
+             System.err.println("Warning: Applicant " + applicant.getNric() + " not found in withdrawRequests list during withdrawal acceptance for project " + this.name);
+             return false;
+        }
+
+        // 2. Add to unsuccessful list (marks end of this application lifecycle)
+        boolean addedToUnsuccessful = false;
+        if (this.unsuccessfulApplicants != null) {
+             if (!this.unsuccessfulApplicants.contains(applicant)) {
+                 addedToUnsuccessful = this.unsuccessfulApplicants.add(applicant);
+             } else {
+                  addedToUnsuccessful = true; 
+             }
+        } else {
+             System.err.println("ERROR: unsuccessfulApplicants list is null in project " + this.name);
+             return false; 
+        }
+
+        if (addedToUnsuccessful) {
+             return true; // Successfully processed
+        } else {
+             System.err.println("ERROR: Failed to add applicant " + applicant.getNric() + " to unsuccessful list during withdrawal acceptance.");
+             return false;
+        }
+    }
 	
 	public void updateWithdrawToUnsuccessful(Applicant applicant) {
 		if (applicant != null && applicant.getNric() != null) { 
@@ -393,9 +497,36 @@ public class Project {
 		}
 	}
 
-	// checks if 2 projects are in same period
-	public boolean isClashing(LocalDate start1, LocalDate end1) {
-		return !(end1.isBefore(this.appClosingDate) || start1.isAfter(this.appOpeningDate));
-	}	
+	/**
+	 * Checks if the date range of this project overlaps with a given date range.
+	 * Overlap occurs if one period starts before the other ends.
+	 * Assumes dates are inclusive.
+	 *
+	 * @param otherStart The start date of the other period.
+	 * @param otherEnd   The end date of the other period.
+	 * @return true if the periods overlap, false otherwise.
+	 */
+	public boolean isClashing(LocalDate otherStart, LocalDate otherEnd) {
+		// Ensure all dates are valid before comparison
+		if (otherStart == null || otherEnd == null || this.appOpeningDate == null || this.appClosingDate == null) {
+			System.err.println("Warning: Cannot check clash due to null dates for project " + this.name);
+			return false; 
+		}
+
+		// Check for invalid date ranges (end before start)
+		if (otherEnd.isBefore(otherStart) || this.appClosingDate.isBefore(this.appOpeningDate)) {
+			System.err.println("Warning: Invalid date range detected during clash check for project " + this.name);
+			return false; 
+		}
+
+		// Condition 1: The other period ends before this one starts.
+		boolean otherEndsBeforeThisStarts = otherEnd.isBefore(this.appOpeningDate);
+		// Condition 2: This period ends before the other one starts.
+		boolean thisEndsBeforeOtherStarts = this.appClosingDate.isBefore(otherStart);
+
+		boolean noOverlap = otherEndsBeforeThisStarts || thisEndsBeforeOtherStarts;
+
+		return !noOverlap; 
+	}
 
 }
