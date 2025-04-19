@@ -9,6 +9,10 @@ import Actors.User;
 import Project.Project;
 import Services.EnquiryService;
 
+/**
+ * CLI class for managing the enquiry interface for all users.
+ * Provides functionality to submit, view, edit, and reply to enquiries.
+ */
 public class EnquiryCLI {
 	private final EnquiryService enquiryService;
 	private final String currentNRIC;
@@ -18,6 +22,17 @@ public class EnquiryCLI {
     private final Map<String, User> allUsersMap;
     private final Map<String, Project> allProjectsMap;
 	
+    /**
+     * Constructs a CLI handler for enquiry operations.
+     *
+     * @param enquiryService The service handling enquiry data
+     * @param currentNRIC The NRIC of the current user
+     * @param isStaff Flag indicating if the user is a staff member (officer or manager)
+     * @param isManager Flag indicating if the user is a manager
+     * @param scanner Scanner object for reading input
+     * @param allUsersMap Map of all users by NRIC
+     * @param allProjectsMap Map of all projects by name
+     */
 	public EnquiryCLI(EnquiryService enquiryService, String currentNRIC, boolean isStaff, boolean isManager,Scanner scanner, Map<String, User> allUsersMap, Map<String, Project> allProjectsMap) {
 		this.enquiryService = enquiryService;
 		this.currentNRIC = currentNRIC;
@@ -28,6 +43,12 @@ public class EnquiryCLI {
         this.allProjectsMap = allProjectsMap;
 	}
 	
+    /**
+     * Displays the interactive enquiry menu.
+     * Allows users to submit, view, edit, delete, or reply to enquiries based on role.
+     *
+     * @param projectName The project context passed from caller (optional)
+     */
 	public void showEnquiryMenu(String projectName) {
         while (true) {
             System.out.println("\n--- Enquiry Menu ---");
@@ -568,5 +589,3 @@ public class EnquiryCLI {
         return nric + " (Unknown)"; // Fallback
     }
 }
-
-
