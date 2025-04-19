@@ -7,11 +7,18 @@ import java.util.regex.Pattern;
 import Actors.User;
 import Login.Login;
 
+/**
+ * CLI utility class for handling user login and password changes.
+ * Interfaces with the user through the console using Scanner.
+ */
 public class LoginCLI {
 
     /**
      * Prompts user to login with NRIC and password using the Scanner.
      * Returns the authenticated User object or null if user exits.
+     * @param scanner Scanner for reading input
+     * @param usersMap Map of all users
+     * @return Authenticated User or null
      */
     public static User loginUser(Scanner scanner, Map<String, User> usersMap) {
         
@@ -54,6 +61,9 @@ public class LoginCLI {
 
     /**
      * Handles password change prompt for logged-in user.
+     * @param scanner Input scanner
+     * @param user The user requesting the update
+     * @return true if successful
      */
     public static boolean changePassword(Scanner scanner, User user) {
         System.out.print("Enter new password: ");
