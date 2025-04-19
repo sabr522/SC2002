@@ -527,6 +527,7 @@ public class Project {
     /**
      * Adds applicant to withdrawal queue.
      * @param applicant Applicant requesting withdrawal
+     * @return true if the withdrawal request was successfully processed and added to the queue; false otherwise
      */	
 	public boolean updateWithdrawRequests(Applicant applicant) {
         if (applicant == null || applicant.getNric() == null) {
