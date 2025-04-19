@@ -13,6 +13,8 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map; // Needed to accept the main data maps
 import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.stream.Collectors; // Added for cleaner filtering
@@ -67,14 +69,15 @@ public class ManagerCLI {
         do {
             System.out.println("\n--- Manager Menu (" + manager.getName() + ") ---");
             System.out.println("1. Create New Project");
-            System.out.println("2. View/Edit/Delete My Projects");
-            System.out.println("3. Toggle Project Visibility");
-            System.out.println("4. Approve/Reject Officer Registration");
-            System.out.println("5. View Approved Officers (Per Project)");
-            System.out.println("6. Accept/Reject Applicant Application");
-            System.out.println("7. Accept/Reject Applicant Withdrawal");
-            System.out.println("8. Generate Applicant Report");
-            System.out.println("9. Handle Enquiries"); 
+            System.out.println("2. View/Edit/Delete MY Created Projects"); 
+            System.out.println("3. View ALL Projects (Regardless of Creator/Visibility)");
+            System.out.println("4. Toggle MY Project Visibility");
+            System.out.println("5. Approve/Reject Officer Registration"); 
+            System.out.println("6. View Approved Officers (Per MY Project)"); 
+            System.out.println("7. Accept/Reject Applicant Application (For MY Projects)");
+            System.out.println("8. Accept/Reject Applicant Withdrawal (For MY Projects)");
+            System.out.println("9. Generate Applicant Report (For MY Project)");
+            System.out.println("10. Manage Project Enquiries");
             System.out.println("0. Logout");
             System.out.print("Enter choice: ");
 
@@ -83,19 +86,15 @@ public class ManagerCLI {
             try {
                 switch (choice) {
                     case 1: handleCreateProject(); break;
-                    case 2: handleViewEditDeleteProjects(); break;
-                    case 3: handleToggleProjectVisibility(); break;
-                    case 4: handleUpdateOfficerReg(); break;
-                    case 5: handleViewApprovedOfficers(); break;
-                    case 6: handleUpdateApplicant(); break;
-                    case 7: handleUpdateWithdrawal(); break;
-                    case 8: handleGenerateReport(); break;
-                    case 9:
-                        System.out.println("Enquiry handling not implemented in this CLI.");
-                        // Pass the Manager object (which is a User) to the EnquiryCLI
-                        manageAllEnquiries(); 
-                        ;
-                        break;
+                    case 2: handleViewEditDeleteProjects(); break; 
+                    case 3: handleViewAllProjects(); break;
+                    case 4: handleToggleProjectVisibility(); break;
+                    case 5: handleUpdateOfficerReg(); break;
+                    case 6: handleViewApprovedOfficers(); break; 
+                    case 7: handleUpdateApplicant(); break;
+                    case 8: handleUpdateWithdrawal(); break;
+                    case 9: handleGenerateReport(); break; 
+                    case 10: manageAllEnquiries(); break;
                     case 0:
                         System.out.println("Preparing to logout manager " + manager.getName() + "...");
                         break;
@@ -271,11 +270,12 @@ public class ManagerCLI {
      * @param projectToEdit The actual Project object from the main map to modify.
      */
     private void handleEditProject(Project projectToEdit) {
-        System.out.println("\n--- Editing Project: " + projectToEdit.getName() + " ---");
+        String originalName = projectToEdit.getName();
+        System.out.println("\n--- Editing Project: " + originalName+ " ---");
         System.out.println("(Leave blank or enter invalid value to keep existing)");
 
         // Get Optional Inputs using readOptional... helpers
-        System.out.print("Enter new Place Name (Current: " + projectToEdit.getName() + "): ");
+        System.out.print("Enter new Place Name (Current: " + originalName+ "): ");
         String placeName = readOptionalStringInput();
 
         System.out.print("Enter new Neighbourhood (Current: " + projectToEdit.getNeighbourhood() + "): ");
@@ -297,10 +297,15 @@ public class ManagerCLI {
 
         if (success) {
             System.out.println("Project updated successfully IN MEMORY.");
-             System.out.println("Changes will be saved on logout.");
-            // NO SAVE TO FILE HERE
+            String newName = projectToEdit.getName(); 
+            if (!originalName.equals(newName)) {
+                 System.out.println("Project name changed from '" + originalName + "' to '" + newName + "'. Updating map reference.");
+                 allProjectsMap.remove(originalName); // Remove entry with the old key
+                 allProjectsMap.put(newName, projectToEdit); // Add entry with the new key
+            System.out.println("Changes will be saved on logout.");
         } else {
             System.err.println("Failed to update project (check console for errors like date clash or project not managed).");
+            }
         }
     }
 
@@ -526,7 +531,6 @@ public class ManagerCLI {
              System.out.println("Changes will be saved on logout.");
             // NO SAVE TO FILE HERE
         } else {
-             // Specific error should be printed by manager.updateWithdrawal if possible
             System.err.println("Failed to process applicant withdrawal.");
         }
     }
@@ -774,6 +778,40 @@ public class ManagerCLI {
             return null;
         }
         return selected;
+    }
+    /**
+     * Displays details for ALL projects in the system, ignoring visibility
+     * and creator, as per Manager requirements.
+     */
+    private void handleViewAllProjects() {
+        System.out.println("\n--- Viewing ALL Projects ---");
+        if (allProjectsMap == null || allProjectsMap.isEmpty()) {
+            System.out.println("No projects found in the system.");
+            return;
+        }
+
+        // Sort projects by name for consistent display (optional)
+        List<Project> sortedProjects = new ArrayList<>(allProjectsMap.values());
+        sortedProjects.sort(Comparator.comparing(Project::getName, String.CASE_INSENSITIVE_ORDER));
+
+        for (Project p : sortedProjects) {
+            if (p == null) continue; // Safety check
+
+            System.out.println("\n====================================");
+            System.out.println("Project: " + p.getName());
+            System.out.println("====================================");
+            try {
+                p.viewAllDetails(true);
+
+                System.out.println("-> Available Units: [2-Room: " + p.getAvalNo2Room() + ", 3-Room: " + p.getAvalNo3Room() + "]");
+
+            } catch (Exception e) {
+                System.err.println("Error displaying details for project: " + p.getName() + " - " + e.getMessage());
+                System.out.println("(Error retrieving full details)");
+            }
+        }
+        System.out.println("====================================");
+        System.out.println("--- End of All Projects List ---");
     }
 
 } 

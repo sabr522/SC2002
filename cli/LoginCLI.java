@@ -27,7 +27,12 @@ public class LoginCLI {
             // format check
             String nricRegex = "^[A-Za-z]\\d{7}[A-Za-z]$";
             if (Pattern.matches(nricRegex, nric)) {
-                break;
+                user = usersMap.get(nric.toUpperCase()); 
+                if (user != null) {
+                    break;
+                } else {
+                    System.out.println("NRIC '" + nric + "' not found in the system. Please try again.");
+                }
             } else {
                 System.out.println("Invalid NRIC format. Please try again (e.g., S1234567Z).");
             }

@@ -2,14 +2,14 @@ package cli;
 
 import Actors.Applicant;
 import Actors.Officer;
-import Actors.User; // Keep for map
+import Actors.User; 
 import Project.Project;
-import Services.EnquiryService; // Keep for enquiry
+import Services.EnquiryService;
 import data.DataManager; 
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
-import java.util.InputMismatchException; // Keep for helper
+import java.util.HashMap;
 import java.util.List;
 
 public class OfficerCLI {
@@ -200,17 +200,62 @@ public class OfficerCLI {
         boolean success = officer.bookFlatForApplicant(applicantToBook);
 
         // Officer method already prints success/failure messages
-        // No further action needed here unless you want to redisplay the menu etc.
     }
 
+    /**
+     * Handles generating a booking receipt. Lists booked applicants for the
+     * handled project and prompts the officer to select one by index.
+     */
     private void generateReceipt() {
-        if (!officer.isHandlingApproved() || officer.getHandledProject() == null) {
-             System.out.println("You must be handling an approved project."); return;
+        // 1. Check if officer is handling a project
+        Project handledProject = officer.getHandledProject();
+        if (!officer.isHandlingApproved() || handledProject == null) {
+            System.out.println("You must be approved and handling a project to generate receipts.");
+            return;
         }
-        System.out.print("Enter NRIC of booked applicant to generate receipt for: ");
-        String nric = scanner.nextLine();
-        // Calls the method in Officer class
-        officer.generateReceipt(nric);
+
+        // 2. Get list of booked applicants from the project
+        List<Applicant> bookedList = handledProject.getBookedApplicants(); 
+        if (bookedList == null || bookedList.isEmpty()) {
+            System.out.println("No applicants have booked a flat in project '" + handledProject.getName() + "' yet.");
+            return;
+        }
+
+        // 3. Display booked applicants with indices
+        System.out.println("\n--- Booked Applicants in Project: " + handledProject.getName() + " ---");
+        Map<Integer, String> optionMap = new HashMap<>(); // Map display index -> NRIC
+        int displayIndex = 1;
+        for (Applicant app : bookedList) {
+            if (app != null) {
+                System.out.printf("%d. %s (%s) - Booked: %s%n",
+                                displayIndex, app.getName(), app.getNric(), app.getTypeFlat());
+                optionMap.put(displayIndex, app.getNric());
+                displayIndex++;
+            }
+        }
+        System.out.println("0. Cancel Receipt Generation");
+
+        // 4. Get officer's choice
+        int choice = -1;
+        String selectedNric = null;
+        while(true) {
+            choice = readIntInput("Enter number of applicant to generate receipt for: ");
+            if (choice == 0) {
+                System.out.println("Receipt generation cancelled.");
+                return;
+            }
+            if (optionMap.containsKey(choice)) {
+                selectedNric = optionMap.get(choice);
+                break;
+            } else {
+                System.out.println("Invalid selection. Please enter a number from the list or 0.");
+            }
+        }
+
+        // 5. Call the officer's logic method with the selected NRIC
+        if (selectedNric != null) {
+            officer.generateReceipt(selectedNric); // Call the existing logic method
+        }
     }
 
     private void manageEnquiries() {
