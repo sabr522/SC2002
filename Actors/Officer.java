@@ -5,19 +5,26 @@ import java.time.LocalDate; // Added for date check
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects; // Added for potential future use
+import java.util.Objects; 
 import java.util.Scanner;
 
-// Sticking with Officer extends Applicant as requested
+/**
+ * Officer subclass of Applicant, responsible for managing BTO project operations.
+ * Can register for projects, view applicants, book flats, and generate receipts.
+ */
 public class Officer extends Applicant {
 
-    // --- Officer Specific State ---
     private Project handledProject;
     private boolean isHandlingApproved;
 
     /**
      * Constructor for Officer.
      * Calls the protected Applicant constructor to set the role correctly.
+     * @param name Officer name
+     * @param nric NRIC
+     * @param password Password
+     * @param maritalStatus Marital status
+     * @param age Officer age
      */
     public Officer(String name, String nric, String password, String maritalStatus, int age) {
         // Call protected Applicant constructor, passing the correct role
@@ -29,23 +36,34 @@ public class Officer extends Applicant {
 
     // --- Getters and Setters for Officer state ---
 
-    /** Gets the Project object this officer is handling or pending approval for. */
+    /** 
+     * Gets the Project object this officer is handling or pending approval for. 
+     * @return The project this officer is registered to handle
+    */
     public Project getHandledProject() {
         return handledProject;
     }
 
-    /** Sets the Project this officer will handle (called by Manager or DataManager). */
+    /**
+     * Sets the Project this officer will handle (called by Manager or DataManager).
+     * @param project Project reference
+     */
     public void setHandledProject(Project project) {
-        // Consider adding logic: Can only set if not already handling another?
         this.handledProject = project;
     }
 
-    /** Gets the approval status for handling the assigned project. */
+    /** 
+     * Gets the approval status for handling the assigned project. 
+     *  @return True if the officer has been approved
+     */
     public boolean isHandlingApproved() {
         return isHandlingApproved;
     }
 
-    /** Sets the approval status (called by Manager or DataManager). */
+    /** 
+     * Sets the approval status (called by Manager or DataManager). 
+     	* @param approved Boolean flag
+     */
     public void setHandlingApproved(boolean approved) {
         this.isHandlingApproved = approved;
     }
@@ -56,6 +74,9 @@ public class Officer extends Applicant {
      * Allows an Officer to register interest in handling a specific project.
      * Adds the officer to the project's pending list after eligibility checks.
      * Uses the corrected super constructor, so getRole() should be "Officer".
+     * @param projectName Name of the project to register for
+	 * @param allProjectsMap Map of all project names to project objects
+	 * @param allUsersMap Map of all NRICs to user objects
      */
     public void registerProject(String projectName, Map<String, Project> allProjectsMap, Map<String, User> allUsersMap) {
         if (projectName == null || projectName.trim().isEmpty()) {
@@ -225,6 +246,7 @@ public class Officer extends Applicant {
 
     /**
      * Generates a receipt for a booked applicant within the handled project.
+     * @param nric NRIC of applicant
      */
     public void generateReceipt(String nric) {
         if (!this.isHandlingApproved || this.handledProject == null) {
@@ -320,7 +342,6 @@ public class Officer extends Applicant {
         }
 
         if (!eligible) {
-             // Should have been caught above, but final check
              System.out.println("You are not eligible for the chosen flat type."); return;
         }
 
