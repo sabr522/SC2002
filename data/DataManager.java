@@ -602,10 +602,6 @@ public class DataManager {
 
         for (Project project : projects.values()) {
              if (project == null) continue;
-            // **Need logic based on how Project stores flat info**
-            // Example assumes specific 2/3 room getters:
-            // Assumes getters like getNo2Room(), getAvalNo2Room(), getNo3Room(), getAvalNo3Room() exist
-            // Assumes a placeholder price or a getter like getPrice2Room() / getPrice3Room()
             try {
                  if (project.getNo2Room() > 0) { // Only save if 2-room units exist
                      csvData.add(new String[] {
@@ -613,7 +609,7 @@ public class DataManager {
                          "2-Room",
                          String.valueOf(project.getNo2Room()),
                          String.valueOf(project.getAvalNo2Room()),
-                         "350000" // Placeholder price - replace with getter if available project.getPrice2Room()
+                         "350000" 
                      });
                  }
                  if (project.getNo3Room() > 0) { // Only save if 3-room units exist
@@ -622,7 +618,7 @@ public class DataManager {
                          "3-Room",
                          String.valueOf(project.getNo3Room()),
                          String.valueOf(project.getAvalNo3Room()),
-                         "450000" // Placeholder price - replace with getter project.getPrice3Room()
+                         "450000"
                      });
                  }
             } catch (Exception e) {
@@ -642,11 +638,10 @@ public class DataManager {
             if (project == null) continue;
              try {
                 // Save approved officers
-                // Assumes project.getArrOfOfficers() returns List<Officer> of approved officers
                 List<Officer> approvedOfficers = project.getArrOfOfficers();
                 if (approvedOfficers != null) {
                     for (Officer officer : approvedOfficers) {
-                        if (officer != null && officer.getNric() != null) { // Null checks
+                        if (officer != null && officer.getNric() != null) { 
                              csvData.add(new String[] {
                                  project.getName(),
                                  officer.getNric(),
@@ -657,8 +652,7 @@ public class DataManager {
                 }
 
                 // Save pending officers
-                // Assumes project.getPendingOfficerRegistrations() exists and returns List<Officer>
-                List<Officer> pendingOfficers = project.getPendingOfficerRegistrations(); // Replace with actual method name
+                List<Officer> pendingOfficers = project.getPendingOfficerRegistrations(); 
                  if (pendingOfficers != null) {
                      for (Officer officer : pendingOfficers) {
                          if (officer != null && officer.getNric() != null) { // Null checks
