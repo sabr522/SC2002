@@ -8,6 +8,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Represents an applicant user who can apply for BTO projects, view and manage their application status,
+ * book flats, and request withdrawals.
+ */
 public class Applicant extends User implements ApplicantRole {
 	
     private Project project;
@@ -31,49 +35,87 @@ public class Applicant extends User implements ApplicantRole {
     /**
      * Public constructor specifically for creating Applicant instances.
      * Calls the protected constructor with the role "Applicant".
+     * @param name Name of the applicant
+     * @param nric NRIC of the applicant
+     * @param password Password
+     * @param maritalStatus Marital status
+     * @param age Age of the applicant
      */
     public Applicant(String name, String nric, String password, String maritalStatus, int age) {
         this(name, nric, age, maritalStatus, password, "Applicant"); 
     }
     
+    /** Returns the flat type chosen by the applicant. 
+     * @return The selected flat type (2-Room or 3-Room) */
     public String getTypeFlat() {
     	return typeFlat;
     }
     
+    /** 
+     * Returns the project the applicant is in.
+     * @return The project that the applicant is in */
     public Project getProject() {
     	return project;
     }
     
+    /** 
+     * Returns the current application status.
+     * @return The current application status */
     public String getAppStatus() {
     	return appStatus;
     }
 
+    /** 
+     * Returns whether a withdrawal has been requested.
+     * @return true if a withdrawal has been requested */
     public boolean getWithdrawalStatus() {
         return withdrawStatus;
     }
     
+    /** 
+     * Checks whether the applicant has applied for a project.
+     * @return true if applicant has applied to a project */
     public boolean isApplied() { 
     	return applied; 
     }
     
+    /** 
+     * Returns the current application status.
+     * @return application status */
     public String checkApplicationStatus() {
         return appStatus;
     }
     
+    /**
+     * Updates the internal flag that tracks application state.
+     * @param applied true if the applicant has applied
+     */
     public void setApplied(boolean applied) { 
     	this.applied = applied; 
     }
-    
+
+    /**
+     * Sets the project that the applicant is in.
+     * @param project The project object
+     */
     public void setProject(Project project) { 
     	if(project != null)
     	   this.project = project; 
     }
-    
+
+    /**
+     * Flags whether the applicant has requested withdrawal.
+     * @param withdrawStatus true if withdrawal is requested
+     */
     public void setWithdrawalStatus(boolean withdrawStatus) {
     	this.withdrawStatus = withdrawStatus;
     }
     
 
+     /**
+     * Sets the flat type that the applicant is applying for.
+     * @param typeFlat Must be either "2-Room" or "3-Room"
+     */
     public void setTypeFlat(String typeFlat) {
         if (!typeFlat.equals("2-Room") && !typeFlat.equals("3-Room")) 
             throw new IllegalArgumentException("Flat type must be either '2-Room' or '3-Room'");
@@ -145,7 +187,12 @@ public class Applicant extends User implements ApplicantRole {
         }
         return visibleProjects;
     }
-   
+
+    /**
+     * Returns a list of projects this applicant is eligible to apply for.
+     * @param allProjectsMap All projects in system
+     * @return List of eligible and available projects
+     */
     public List<Project> viewAvailProjects(Map<String, Project> allProjectsMap) {
         List<Project> availableProjects = new ArrayList<>();   
 
@@ -170,8 +217,13 @@ public class Applicant extends User implements ApplicantRole {
 
         return availableProjects;
     }
-    
 
+    /**
+     * Applies to a selected project and flat type after validating eligibility and availability.
+     * @param availableProjects List of available projects
+     * @param Projectname Name of project to apply to
+     * @param chosenFlatType Desired flat type
+     */
     public void applyProject(List<Project> availableProjects, String Projectname, String chosenFlatType) {
     	
     	if (this.applied) {
@@ -242,7 +294,10 @@ public class Applicant extends User implements ApplicantRole {
         System.out.println("You have successfully applied for the " + selectedProject.getName() + " project (" + this.typeFlat + " flat).");
     }
         
-    
+     /**
+     * Displays and returns details of the project the applicant has applied to.
+     * @return Status summary string
+     */   
     public String viewAppliedProject() {
         if (applied && project != null) {
             System.out.println("\n--- Details of Your Applied Project ---");
@@ -262,7 +317,9 @@ public class Applicant extends User implements ApplicantRole {
         }
     }
 
-
+    /**
+     * Initiates booking request if the applicant status is 'Successful'.
+     */
     public void bookFlat() {
         if (this.appStatus.equals("Successful")) {
             project.updateSuccessfulApplicants(this);
@@ -274,7 +331,9 @@ public class Applicant extends User implements ApplicantRole {
         
     }
 
-    
+    /**
+     * Submits a withdrawal request if status is 'Successful' or 'Booked'.
+     */
     public void withdrawApp() {
         // Check if eligible to withdraw (Applied AND Successful/Booked)
         if (!this.applied || !("Successful".equals(this.appStatus) || "Booked".equals(this.appStatus))) {
@@ -298,7 +357,7 @@ public class Applicant extends User implements ApplicantRole {
 
         // Update project's withdrawal request list
         if (project.updateWithdrawRequests(this)) {
-            this.setWithdrawalStatus(true); // <<< --- CRITICAL FIX: Set flag HERE ---
+            this.setWithdrawalStatus(true); 
             System.out.println("Withdrawal requested for project '" + project.getName() + "'. Awaiting manager's approval.");
         } else {
             // This might happen if updateWithdrawRequests fails (e.g., applicant not found in source lists)
