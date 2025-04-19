@@ -6,24 +6,47 @@ import Project.Project;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Interface defining behaviors expected from any applicant.
+ * Includes methods to apply, view status, book, or withdraw applications.
+ */
 public interface ApplicantRole {
 
-	// To view the list of available projects for the applicant based on eligibility
+    /**
+     * Gets list of available projects that the applicant can apply for.
+     * @param allProjectsMap Map of all projects.
+     * @return List of eligible projects.
+     */
     List<Project> viewAvailProjects(Map<String, Project> allProjectsMap);
 
-    // TO apply for a project, passes the project name and chosen flat type
+    /**
+     * To apply to a given project using project name and flat type.
+     * @param availableProjects List of projects user is eligible for.
+     * @param projectName Name of the selected project.
+     * @param chosenFlatType Type of flat requested (2-Room or 3-Room).
+     */
     void applyProject(List<Project> availableProjects, String projectName, String chosenFlatType);
 
-    // To view the project the applicant applied for, if any
+    /**
+     * To view the project the applicant applied for, if any.
+     * @return Project details or message.
+     */
     String viewAppliedProject();
     
-    // Checks appStatus
+    /**
+     * Checks and returns current application status.
+     * @return The application status string.
+     */
     String checkApplicationStatus();
     
-    // Method to book a flat if application status is 'Successful'
+    /**
+     * Books a flat if the application is marked as successful.
+     */
     void bookFlat();
     
-    // Method to withdraw the application if the applicant is eligible
+    /**
+     * Requests to withdraw an application if applicant is eligible.
+     */
     void withdrawApp();
 
 }
