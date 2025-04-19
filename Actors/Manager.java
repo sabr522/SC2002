@@ -4,7 +4,7 @@ import Project.Project;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map; // Added import for Map needed in updated updateRegOfficer
+import java.util.Map; 
 import java.util.Objects;
 
 /**
@@ -15,9 +15,7 @@ import java.util.Objects;
  * Operations rely on checking the creatorName of Project objects passed to its methods
  * or operating on data filtered by the caller (e.g., ManagerCLI).
  */
-public class Manager extends User { // Extend the abstract User class
-
-    // No longer contains: private List<Project> managedProjects;
+public class Manager extends User { 
 
     /**
      * Constructor for Manager. Initializes inherited User fields.
@@ -218,7 +216,6 @@ public class Manager extends User { // Extend the abstract User class
      * Does not perform ownership check here
      *
      * @param project The project to view.
-     * @return String representing project details, or an error message if project is null or view fails.
      */
     public void getProjectDetails(Project project) {
         if (project != null) {
