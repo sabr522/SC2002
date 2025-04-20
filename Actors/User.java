@@ -107,6 +107,8 @@ public abstract class User {
        this.salt = generateSalt();
        this.password = hashPassword(newPassword, this.salt);
     }
+
+    
     // --- Password Hashing and Salt Generation (Add these methods) ---
     private static String generateSalt() {
         SecureRandom random = new SecureRandom();
