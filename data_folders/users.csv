@@ -1,10 +1,10 @@
-NRIC,Name,Age,MaritalStatus,PasswordHash,Role
-T1234567B,Jessica,40,Married,password,Manager
-T1234567C,Charlie Loh,50,Married,password,Manager
-G9876543C,Raymond Lim,40,Single,testing,Officer
-G9876543B,Timothy Tan,40,Single,password,Officer
-G9876543A,Caleb Tan,40,Single,password,Officer
-S9876543Z,David Yap,28,Single,password,Applicant
-G9876543Z,Emily Goh,35,Married,password,Applicant
-S1234567A,Alice Tan,40,Single,newpassword,Applicant
-G1234567B,Bob Lim,40,Single,password,Applicant
+NRIC,Name,Age,MaritalStatus,PasswordHash,Salt,Role
+T1234567B,Jessica,40,Married,59GEbsSlDz1QmQcZfVwPbCCR41AW2Gkc46knQA5kUVM=,942K1LGe++bYJinnYvOkUQ==,Manager
+T1234567C,Charlie Loh,50,Married,aBZmig3FfUMbJBR5jnurDHZ/0xxlnNeWTEjdoXaNLbs=,AoIk96xZK4LYAKh9CuZfeA==,Manager
+G9876543C,Raymond Lim,40,Single,xd118/OBZCONYxMEDnM6a0iWosozNmqgqkS15Shn8So=,gZSserz9+KVw7bPj8CNgaA==,Officer
+G9876543B,Timothy Tan,40,Single,NR+We7b0xI8iv25hAjZR+CijqB8P4iz8rRihbOr6Gxc=,YpsylnRcd9400SUlZ0K6qA==,Officer
+G9876543A,Caleb Tan,40,Single,NeuCfOobiPWIxExFJ86DxCCe3P+NsahKkqCgXNtVR3A=,sBxWgD2TIxlo+2mARoE/vQ==,Officer
+S9876543Z,David Yap,28,Single,ek55+DjzPO2Czn3Co+yL1lG7dgDkAlBx0x1oCLkK/ig=,uwHCb56K9p39/2Y+PaI0hQ==,Applicant
+G9876543Z,Emily Goh,35,Married,UB2ZH5bB13mtOCUEFSVlibWRqwTzBCaW6eMsf6UhZn0=,yEnuxICh4fZM9mSMOGjY7g==,Applicant
+S1234567A,Alice Tan,40,Single,i8QF7/0Z3rE55Mev8mz5oKGuMIPJs5VdzK3mAhqL+0Q=,xAG82iiqc58xgyEsjZd1AA==,Applicant
+G1234567B,Bob Lim,40,Single,gCdz09OZyQIfeQy8UgetKx9bs1lduDGLzHd/sE618sI=,9Ix7qEsQ7NgT5solOyT87g==,Applicant

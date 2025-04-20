@@ -25,7 +25,11 @@ public class Login {
         User user = usersMap.get(nric.toUpperCase());
         if (user == null) return null;
 
-        return user.getPassword().equals(password) ? user : null;
+        if (user.verifyPassword(password)) { // Verify using stored salt and hash
+            return user; // Success
+        } else {
+            return null; // Password mismatch
+        }
     }
 
     /**

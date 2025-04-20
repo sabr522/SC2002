@@ -41,7 +41,7 @@ public class DataManager {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // YYYY-MM-DD
 
     // Define CSV Headers
-    private static final String USERS_HEADER = "NRIC,Name,Age,MaritalStatus,PasswordHash,Role";
+    private static final String USERS_HEADER = "NRIC,Name,Age,MaritalStatus,PasswordHash,Salt,Role";
     private static final String PROJECTS_HEADER = "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate";
     private static final String FLATS_HEADER = "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice"; // Added SellingPrice for completeness
     private static final String OFFICERS_HEADER = "ProjectName,OfficerNRIC,Status"; // Status: Approved | Pending
@@ -176,66 +176,71 @@ public class DataManager {
      * @return A Map where the key is NRIC and the value is the User object.
      * @throws IOException If the file is missing or unreadable.
      */
-    public Map<String, User> loadUsers() throws IOException {
-        Map<String, User> users = new HashMap<>();
-        List<String[]> csvData = readCsvFile(USERS_CSV_PATH);
-        // Header: NRIC[0],Name[1],Age[2],MaritalStatus[3],PasswordHash[4],Role[5]
-
-        for (String[] values : csvData) {
-            if (values.length < 6) {
-                 System.err.println("Skipping malformed user row: " + String.join(",", values));
-                 continue; // Basic check for enough columns
-            }
-            try {
-                String nric = values[0].trim();
-                String name = values[1].trim();
-                int age = Integer.parseInt(values[2].trim());
-                String maritalStatus = values[3].trim();
-                String password = values[4]; // Keep as is (plain text or hash)
-                String role = values[5].trim();
-
-                if (nric.isEmpty()) {
-                     System.err.println("Skipping user row with empty NRIC.");
-                     continue;
-                }
-
-                User user = null;
-                switch (role.toLowerCase()) {
-                    case "manager":
-                        // Use the updated Manager constructor 
-                        user = new Manager(name, nric, password, maritalStatus, age);
-                        break;
-                    case "officer":
-                         // Officer status (approved/pending) is determined later from project_officers.csv
-                    	user = new Officer(name, nric, password, maritalStatus, age);
-                         ((Officer)user).setHandlingApproved(false); // Default to not approved until checked
-                        break;
-                    case "applicant":
-                        // Application details (project, status, etc.) loaded later from applications.csv
-                        user = new Applicant(name, nric, password, maritalStatus, age);
-                        break;
-                    default:
-                        System.err.println("Warning: Invalid role '" + role + "' found for NRIC " + nric + ". Skipping user.");
-                        continue; // Skip this user
-                }
-
-                if (users.containsKey(nric)) {
-                     System.err.println("Warning: Duplicate NRIC found: " + nric + ". Overwriting previous entry.");
-                }
-                users.put(nric, user);
-
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing age for user row: " + String.join(",", values) + ". Skipping.");
-            } catch (IllegalArgumentException e) {
-                System.err.println("Error creating user object: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
-            } catch (Exception e) { // Catch broader exceptions during object creation
-                 System.err.println("Unexpected error processing user row: " + String.join(",", values));
-                 e.printStackTrace();
-            }
-        }
-        System.out.println("Loaded " + users.size() + " users.");
-        return users;
+     public Map<String, User> loadUsers() throws IOException {
+         Map<String, User> users = new HashMap<>();
+         List<String[]> csvData = readCsvFile(USERS_CSV_PATH);
+         // NRIC[0],Name[1],Age[2],MaritalStatus[3],PasswordHash[4],(Salt[5]),Role[6]
+ 
+         boolean isLoadingHashed = false; // Flag to track format
+         if (!csvData.isEmpty() && csvData.get(0).length >= 7) {
+              isLoadingHashed = true;
+              System.out.println("Detected 7+ columns, attempting to load hashed passwords and salts.");
+         } else if (!csvData.isEmpty()) {
+              System.out.println("Detected 6 columns, assuming initial load with plain passwords.");
+         }
+ 
+ 
+         for (String[] values : csvData) {
+             int expectedLength = isLoadingHashed ? 7 : 6;
+             if (values.length < expectedLength) {
+                  System.err.println("Skipping malformed user row (expected " + expectedLength + " columns): " + String.join(",", values));
+                  continue;
+             }
+ 
+             try {
+                 String nric = values[0].trim();
+                 String name = values[1].trim();
+                 int age = Integer.parseInt(values[2].trim());
+                 String maritalStatus = values[3].trim();
+                 String role = isLoadingHashed ? values[6].trim() : values[5].trim(); // Get role from correct index
+                 if (nric.isEmpty()) continue;
+ 
+                 User user = null;
+ 
+                 String tempPasswordForConstructor = "password"; 
+ 
+                 switch (role.toLowerCase()) {
+                     case "manager": user = new Manager(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                     case "officer": user = new Officer(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                     case "applicant": user = new Applicant(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                     default: System.err.println("Warning: Invalid role '" + role + "' for NRIC " + nric); continue;
+                 }
+ 
+                 // Now, load credentials based on detected format
+                 if (isLoadingHashed) {
+                     // Loading existing hash and salt
+                     String loadedPasswordHash = values[4];
+                     String loadedSalt = values[5];
+                     // Use a method to directly set the loaded hash and salt
+                     user.loadCredentials(loadedPasswordHash, loadedSalt);
+                 } else {
+                     String plainPasswordFromCsv = values[4];
+                      if (!"password".equals(plainPasswordFromCsv) && !plainPasswordFromCsv.isEmpty()) {
+                           user.setPassword(plainPasswordFromCsv); // Re-call setPassword to hash this specific plain pass
+                      }
+                 }
+ 
+                users.put(nric.toUpperCase(), user); // Use consistent key casing
+ 
+             } catch (NumberFormatException e) { System.err.println("Error parsing age for user row: " + String.join(",", values) + ". Skipping.");
+             } catch (IllegalArgumentException e) { System.err.println("Error creating user object: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
+             } catch (Exception e) { System.err.println("Unexpected error processing user row: " + String.join(",", values)); e.printStackTrace(); }
+         }
+         System.out.println("Loaded " + users.size() + " users.");
+         return users;
     }
+
+
 
 
     /**
@@ -558,6 +563,7 @@ public class DataManager {
                 String.valueOf(user.getAge()),
                 user.getMaritalStatus(),
                 user.getPassword(), 
+                user.getSalt(),
                 user.getRole()
             });
         }
@@ -599,7 +605,6 @@ public class DataManager {
                 });
              } catch (NullPointerException npe) {
                   System.err.println("Error saving core data for project: " + (project.getName() != null ? project.getName() : "UNKNOWN") + ". Missing required fields (e.g., dates). Skipping.");
-                  // npe.printStackTrace(); // For debugging
              }
         }
         writeCsvFile(PROJECTS_CSV_PATH, csvData, PROJECTS_HEADER);
