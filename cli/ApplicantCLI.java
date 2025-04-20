@@ -7,6 +7,7 @@ import Services.EnquiryService;
 import data.DataManager;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -58,18 +59,20 @@ public class ApplicantCLI {
             System.out.println("4. Book Flat (if eligible)");
             System.out.println("5. Request to Withdraw Application");
             System.out.println("6. Submit or Handle Enquiries (View/Edit/Delete)");
+            System.out.println("7. Set/Update Preferred Neighbourhood");
             System.out.println("0. Logout");
             System.out.println("Enter choice: ");
 
             choice = readIntInput();
 
             switch (choice) {
-                case 1: handleViewAvailableProjects(); break;
+                case 1: handleViewProjectsWithPreference(); break;
                 case 2: handleApplyForProject(); break;
                 case 3: handleViewApplication(); break;
                 case 4: handleBookFlat(); break;
                 case 5: handleWithdrawApplication(); break;
                 case 6: handleEnquiryActions(); break;
+                case 7: handleSetPreferredNeighbourhood(); break;
                 case 0:
                     System.out.println("Logging out applicant " + applicant.getName() + "...");
                     break;
@@ -82,6 +85,154 @@ public class ApplicantCLI {
 
     
     // --- Handler Methods for Menu Options ---
+
+    /**
+     * Retrieves preferred neighbourhood of applicant
+     * Either updates or set a new neighbourhood preference
+     */
+    private void handleSetPreferredNeighbourhood() {
+        System.out.println("\n--- Set Preferred Neighbourhood ---");
+        String currentPref = applicant.getPreferredNeighbourhood();
+        if (currentPref != null) {
+            System.out.println("Your current preference: " + currentPref);
+        } else {
+            System.out.println("You currently have no preferred neighbourhood set.");
+        }
+    
+        System.out.print("Enter your preferred neighbourhood (or leave blank to clear): ");
+        String input = scanner.nextLine();
+        applicant.setPreferredNeighbourhood(input); 
+    
+        String newPref = applicant.getPreferredNeighbourhood();
+        if (newPref != null) {
+            System.out.println("Preferred neighbourhood updated to: " + newPref);
+        } else {
+            System.out.println("Preferred neighbourhood cleared.");
+        }
+         System.out.println("Change will be saved on logout.");
+    }
+
+    /**
+     * Displays ALL visible projects the applicant MIGHT be eligible for.
+     * Shows full details using Project.viewAllDetails.
+     * Afterwards, offers to filter by preferred neighbourhood (if set) OR
+     * allows filtering by any entered neighbourhood.
+     */
+    private void handleViewProjectsWithPreference() {
+        // 1. Get ALL potentially visible projects
+        List<Project> visibleProjects = applicant.getProjectsVisibleForEnquiry(allProjectsMap);
+
+        System.out.println("\n--- Browse All Visible Projects ---");
+
+        if (visibleProjects.isEmpty()) {
+            System.out.println("There are currently no projects visible based on your basic eligibility.");
+            return;
+        }
+
+        // 2. Display ALL visible projects first
+        int displayIndex = 1;
+        for (Project p : visibleProjects) {
+            if (p == null) continue;
+            System.out.println("\n====================================");
+            System.out.println("Project #" + displayIndex++); // Keep index for reference, though not selecting here
+            System.out.println("====================================");
+            try {
+                p.viewAllDetails(false); // Show full details
+                // Display available units for this applicant
+                String status = applicant.getMaritalStatus();
+                int age = applicant.getAge();
+                List<String> unitsAvailable = new ArrayList<>();
+                if (status.equals("Single") && age >= 35) { if (p.getAvalNo2Room() > 0) unitsAvailable.add("2-Room: " + p.getAvalNo2Room()); }
+                else if (status.equals("Married") && age >= 21) { if (p.getAvalNo2Room() > 0) unitsAvailable.add("2-Room: " + p.getAvalNo2Room()); if (p.getAvalNo3Room() > 0) unitsAvailable.add("3-Room: " + p.getAvalNo3Room());}
+                if (!unitsAvailable.isEmpty()) System.out.println("-> Available Units You Can Apply For: [" + String.join(", ", unitsAvailable) + "]");
+                else System.out.println("-> Available Units You Can Apply For: [None currently matching eligibility/stock]");
+            } catch (Exception e) { /* Basic error handling */ System.err.println("Error displaying details for project: " + p.getName());}
+        }
+        System.out.println("===================================="); // Footer
+
+        // 3. Handle Filtering Options
+        String preference = applicant.getPreferredNeighbourhood();
+        boolean wantsToFilter = false;
+        String filterNeighbourhood = null;
+
+        if (preference != null) {
+            System.out.println("\nYour preferred neighbourhood is: " + preference);
+            System.out.print("Do you want to see ONLY projects in this preferred neighbourhood? (yes/no): ");
+            if (readYesNoInput()) {
+                wantsToFilter = true;
+                filterNeighbourhood = preference; // Use preference for filtering
+            }
+            // If they answer no, they might still want to filter by a *different* neighborhood below
+        }
+
+        // If they didn't have a preference OR they said 'no' to filtering by preference, ask if they want to filter now
+        if (!wantsToFilter) { // Ask only if they haven't already opted to filter by preference
+            System.out.print("\nDo you want to filter the list by a specific neighbourhood? (yes/no): ");
+            if (readYesNoInput()) {
+                System.out.print("Enter neighbourhood name to filter by: ");
+                String inputNeighbourhood = scanner.nextLine().trim();
+                if (!inputNeighbourhood.isEmpty()) {
+                     // Validate if this neighbourhood actually exists in the visible list? Optional.
+                     boolean exists = visibleProjects.stream()
+                                       .anyMatch(p -> p!= null && inputNeighbourhood.equalsIgnoreCase(p.getNeighbourhood()));
+                     if(exists){
+                          wantsToFilter = true;
+                          filterNeighbourhood = inputNeighbourhood; // Use user input for filtering
+                     } else {
+                          System.out.println("No visible projects found in the neighbourhood: " + inputNeighbourhood);
+                     }
+                } else {
+                    System.out.println("Neighbourhood name cannot be empty. Not filtering.");
+                }
+            }
+        }
+
+        // 4. Display Filtered Results (if requested)
+        if (wantsToFilter && filterNeighbourhood != null) {
+            System.out.println("\n--- Showing Projects Filtered by Neighbourhood: " + filterNeighbourhood + " ---");
+            boolean foundMatches = false;
+            for (Project p : visibleProjects) { // Iterate the original visible list
+                if (p != null && filterNeighbourhood.equalsIgnoreCase(p.getNeighbourhood())) {
+                    System.out.println("\n====================================");
+                    System.out.println("Project: " + p.getName()); // No index needed for filtered view
+                    System.out.println("====================================");
+                     try {
+                          p.viewAllDetails(false);
+                          // Display available units again
+                           String status = applicant.getMaritalStatus(); int age = applicant.getAge(); List<String> unitsAvailable = new ArrayList<>();
+                           if (status.equals("Single") && age >= 35) { if (p.getAvalNo2Room() > 0) unitsAvailable.add("2-Room: " + p.getAvalNo2Room()); }
+                           else if (status.equals("Married") && age >= 21) { if (p.getAvalNo2Room() > 0) unitsAvailable.add("2-Room: " + p.getAvalNo2Room()); if (p.getAvalNo3Room() > 0) unitsAvailable.add("3-Room: " + p.getAvalNo3Room());}
+                           if (!unitsAvailable.isEmpty()) System.out.println("-> Available Units You Can Apply For: [" + String.join(", ", unitsAvailable) + "]");
+                           else System.out.println("-> Available Units You Can Apply For: [None]");
+                           foundMatches = true;
+                     } catch (Exception e) { /* Error handling */ System.err.println("Error displaying details for project: " + p.getName());}
+                }
+            }
+            if (!foundMatches) {
+                System.out.println("No currently visible projects match the filter: " + filterNeighbourhood);
+            }
+            System.out.println("====================================");
+            System.out.println("--- End of Filtered Project List ---");
+        }
+
+        System.out.println("\nReturning to Applicant Menu...");
+    }
+
+
+    // Ensure readYesNoInput helper exists and uses this.scanner
+    private boolean readYesNoInput() {
+        String input = "";
+        while (true) {
+            input = this.scanner.nextLine().trim().toLowerCase(); // Use class scanner
+            if (input.equals("true") || input.equals("yes") || input.equals("t") || input.equals("y")) {
+                return true;
+            } else if (input.equals("false") || input.equals("no") || input.equals("f") || input.equals("n")) {
+                return false;
+            } else {
+                System.out.print("Invalid input. Please enter true/false or yes/no: ");
+            }
+        }
+   }
     
     /**
      * Retrieves and displays only the projects the applicant is eligible to apply for,

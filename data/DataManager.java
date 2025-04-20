@@ -41,7 +41,7 @@ public class DataManager {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE; // YYYY-MM-DD
 
     // Define CSV Headers
-    private static final String USERS_HEADER = "NRIC,Name,Age,MaritalStatus,PasswordHash,Salt,Role";
+    private static final String USERS_HEADER = "NRIC,Name,Age,MaritalStatus,PasswordHash,Salt,Role,PreferredNeighbourhood";
     private static final String PROJECTS_HEADER = "ProjectName,Neighborhood,Visibility,CreatorName,AppOpeningDate,AppClosingDate";
     private static final String FLATS_HEADER = "ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice"; // Added SellingPrice for completeness
     private static final String OFFICERS_HEADER = "ProjectName,OfficerNRIC,Status"; // Status: Approved | Pending
@@ -179,65 +179,81 @@ public class DataManager {
      public Map<String, User> loadUsers() throws IOException {
          Map<String, User> users = new HashMap<>();
          List<String[]> csvData = readCsvFile(USERS_CSV_PATH);
-         // NRIC[0],Name[1],Age[2],MaritalStatus[3],PasswordHash[4],(Salt[5]),Role[6]
+         // NRIC[0],Name[1],Age[2],MaritalStatus[3],PasswordHash[4],Salt[5],Role[6],PreferredNeighbourhood[7]
  
          boolean isLoadingHashed = false; // Flag to track format
+         boolean hasPrefNeighbourhoodColumn = false; // New flag
+
          if (!csvData.isEmpty() && csvData.get(0).length >= 7) {
-              isLoadingHashed = true;
-              System.out.println("Detected 7+ columns, attempting to load hashed passwords and salts.");
+            isLoadingHashed = true;
+            System.out.println("Detected 7+ columns, attempting to load hashed passwords and salts.");
+            if (csvData.get(0).length >= 8) { 
+                hasPrefNeighbourhoodColumn = true;
+            }
          } else if (!csvData.isEmpty()) {
               System.out.println("Detected 6 columns, assuming initial load with plain passwords.");
          }
  
  
          for (String[] values : csvData) {
-             int expectedLength = isLoadingHashed ? 7 : 6;
-             if (values.length < expectedLength) {
-                  System.err.println("Skipping malformed user row (expected " + expectedLength + " columns): " + String.join(",", values));
-                  continue;
-             }
- 
-             try {
-                 String nric = values[0].trim();
-                 String name = values[1].trim();
-                 int age = Integer.parseInt(values[2].trim());
-                 String maritalStatus = values[3].trim();
-                 String role = isLoadingHashed ? values[6].trim() : values[5].trim(); // Get role from correct index
-                 if (nric.isEmpty()) continue;
- 
-                 User user = null;
- 
-                 String tempPasswordForConstructor = "password"; 
- 
-                 switch (role.toLowerCase()) {
-                     case "manager": user = new Manager(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
-                     case "officer": user = new Officer(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
-                     case "applicant": user = new Applicant(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
-                     default: System.err.println("Warning: Invalid role '" + role + "' for NRIC " + nric); continue;
-                 }
- 
-                 // Now, load credentials based on detected format
-                 if (isLoadingHashed) {
-                     // Loading existing hash and salt
-                     String loadedPasswordHash = values[4];
-                     String loadedSalt = values[5];
-                     // Use a method to directly set the loaded hash and salt
-                     user.loadCredentials(loadedPasswordHash, loadedSalt);
-                 } else {
-                     String plainPasswordFromCsv = values[4];
-                      if (!"password".equals(plainPasswordFromCsv) && !plainPasswordFromCsv.isEmpty()) {
-                           user.setPassword(plainPasswordFromCsv); // Re-call setPassword to hash this specific plain pass
-                      }
-                 }
- 
-                users.put(nric.toUpperCase(), user); // Use consistent key casing
- 
-             } catch (NumberFormatException e) { System.err.println("Error parsing age for user row: " + String.join(",", values) + ". Skipping.");
-             } catch (IllegalArgumentException e) { System.err.println("Error creating user object: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
-             } catch (Exception e) { System.err.println("Unexpected error processing user row: " + String.join(",", values)); e.printStackTrace(); }
-         }
-         System.out.println("Loaded " + users.size() + " users.");
-         return users;
+            int expectedLength = 6; // Base
+            if (isLoadingHashed) expectedLength = 7;
+            if (hasPrefNeighbourhoodColumn) expectedLength = 8;
+
+            if (values.length < expectedLength) {
+                System.err.println("Skipping malformed user row (expected " + expectedLength + " columns): " + String.join(",", values));
+                continue;
+            }
+
+            try {
+                String nric = values[0].trim();
+                String name = values[1].trim();
+                int age = Integer.parseInt(values[2].trim());
+                String maritalStatus = values[3].trim();
+                String role = isLoadingHashed ? values[6].trim() : values[5].trim(); // Get role from correct index
+                if (nric.isEmpty()) continue;
+
+                User user = null;
+
+                String tempPasswordForConstructor = "password"; 
+
+                switch (role.toLowerCase()) {
+                    case "manager": user = new Manager(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                    case "officer": user = new Officer(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                    case "applicant": user = new Applicant(name, nric, tempPasswordForConstructor, maritalStatus, age); break;
+                    default: System.err.println("Warning: Invalid role '" + role + "' for NRIC " + nric); continue;
+                }
+
+                // Now, load credentials based on detected format
+                if (isLoadingHashed) {
+                    // Loading existing hash and salt
+                    String loadedPasswordHash = values[4];
+                    String loadedSalt = values[5];
+                    // Use a method to directly set the loaded hash and salt
+                    user.loadCredentials(loadedPasswordHash, loadedSalt);
+                } else {
+                    String plainPasswordFromCsv = values[4];
+                    if (!"password".equals(plainPasswordFromCsv) && !plainPasswordFromCsv.isEmpty()) {
+                        user.setPassword(plainPasswordFromCsv); // Re-call setPassword to hash this specific plain pass
+                    }
+                }
+                if (user instanceof Applicant && hasPrefNeighbourhoodColumn) {
+                String prefNeighbourhoodStr = values[8].trim(); // Read from column 8
+                if (prefNeighbourhoodStr != null && !prefNeighbourhoodStr.isEmpty() && !"null".equalsIgnoreCase(prefNeighbourhoodStr)) {
+                    ((Applicant) user).setPreferredNeighbourhood(prefNeighbourhoodStr);
+                } else {
+                    ((Applicant) user).setPreferredNeighbourhood(null); // Set null if empty/missing
+                }
+            }
+
+            users.put(nric.toUpperCase(), user); // Use consistent key casing
+
+            } catch (NumberFormatException e) { System.err.println("Error parsing age for user row: " + String.join(",", values) + ". Skipping.");
+            } catch (IllegalArgumentException e) { System.err.println("Error creating user object: " + e.getMessage() + ". Skipping row: " + String.join(",", values));
+            } catch (Exception e) { System.err.println("Unexpected error processing user row: " + String.join(",", values)); e.printStackTrace(); }
+        }
+        System.out.println("Loaded " + users.size() + " users.");
+        return users;
     }
 
 
@@ -557,6 +573,12 @@ public class DataManager {
         for (User user : users.values()) {
             if (user == null) continue; // Safety check
             // Use getters to ensure order matches header
+            String prefNeighbourhoodStr = "";
+            if (user instanceof Applicant) {
+                String pref = ((Applicant) user).getPreferredNeighbourhood();
+                prefNeighbourhoodStr = (pref != null) ? pref : ""; 
+            }
+    
             csvData.add(new String[] {
                 user.getNric(),
                 user.getName(),
@@ -564,7 +586,8 @@ public class DataManager {
                 user.getMaritalStatus(),
                 user.getPassword(), 
                 user.getSalt(),
-                user.getRole()
+                user.getRole(),
+                prefNeighbourhoodStr
             });
         }
         writeCsvFile(USERS_CSV_PATH, csvData, USERS_HEADER);

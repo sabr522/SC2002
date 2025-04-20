@@ -19,6 +19,7 @@ public class Applicant extends User implements ApplicantRole {
     private String appStatus;
     private boolean applied = false;
     private boolean withdrawStatus = false;
+    private String preferredNeighbourhood;
 
     /**
      * Protected constructor for subclasses (like Officer) to pass the correct role up.
@@ -31,6 +32,7 @@ public class Applicant extends User implements ApplicantRole {
         this.typeFlat = null; 
         this.applied = false;
         this.withdrawStatus = false;
+        this.preferredNeighbourhood = null;
     }
     /**
      * Public constructor specifically for creating Applicant instances.
@@ -43,6 +45,7 @@ public class Applicant extends User implements ApplicantRole {
      */
     public Applicant(String name, String nric, String password, String maritalStatus, int age) {
         this(name, nric, age, maritalStatus, password, "Applicant"); 
+        this.preferredNeighbourhood = null;
     }
     
     /** Returns the flat type chosen by the applicant. 
@@ -56,6 +59,12 @@ public class Applicant extends User implements ApplicantRole {
      * @return The project that the applicant is in */
     public Project getProject() {
     	return project;
+    }
+    /**
+     * @return The neighbourhood applicant prefers
+     */
+    public String getPreferredNeighbourhood() {
+        return preferredNeighbourhood;
     }
     
     /** 
@@ -92,6 +101,13 @@ public class Applicant extends User implements ApplicantRole {
      */
     public void setApplied(boolean applied) { 
     	this.applied = applied; 
+    }
+    /**
+     * Set applicant's preferred neighbourhood for application.
+     * @param neighbourhood Applicant's desired neighbourhood name
+     */
+    public void setPreferredNeighbourhood(String neighbourhood) { 
+        this.preferredNeighbourhood = (neighbourhood == null || neighbourhood.trim().isEmpty()) ? null : neighbourhood.trim();
     }
 
     /**
