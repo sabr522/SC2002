@@ -314,12 +314,6 @@ public class Officer extends Applicant {
              System.out.println("Error: As an Officer handling or pending approval for '" + this.handledProject.getName() + "', you cannot apply for other projects as an applicant.");
              return;
         }
-        // 2. Cannot apply for a project where they are pending registration (already covered by check 1)
-        // if (selectedProject.getPendingOfficerRegistrations() != null && selectedProject.getPendingOfficerRegistrations().contains(this)){...}
-
-        // --- APPLICANT CHECKS (using superclass logic directly) ---
-        // Re-check flat type availability and eligibility using superclass logic simulation
-        // This is needed because `availableProjects` only did initial filtering.
 
         // Check availability of chosen flat type
         if (chosenFlatType.equals("2-Room") && selectedProject.getAvalNo2Room() == 0) {
