@@ -1,6 +1,6 @@
 ApplicantNRIC,ProjectName,FlatTypeApplied,ApplicationStatus,WithdrawalStatus,HasApplied
 S1234567A,Edited Project,2-Room,Pending,false,true
-G9876543Z,Edited Project,2-Room,Booked,false,true
+G9876543Z,Edited Project,,Withdrawn,true,false
 G9876543B,Orchid Grove,2-Room,Pending,false,true
 S9876543Z,Acacia Breeze,2-Room,Booked,false,true
 G1234567B,Acacia Breeze,2-Room,Successful,false,true

@@ -554,11 +554,9 @@ public class Project {
               if (flatType != null) {
                  if ("2-Room".equals(flatType)){
                      this.avalNo2Room +=1;
-                      System.out.println("DEBUG: Incremented avalNo2Room to " + this.avalNo2Room + " due to booked withdrawal request.");
                  }
                  else if ("3-Room".equals(flatType)){
                      this.avalNo3Room +=1;
-                     System.out.println("DEBUG: Incremented avalNo3Room to " + this.avalNo3Room + " due to booked withdrawal request.");
                  } else {
                       System.err.println("WARN: Booked applicant " + targetNRIC + " withdrawing had unexpected flat type '" + flatType + "'. Room count not adjusted.");
                  }

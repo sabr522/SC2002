@@ -33,3 +33,10 @@
     |-- officers.csv
     |-- enquiries.csv
 ```
+
+Login successfully (any role).
+Choose "Change Password".
+Enter non-matching new/confirm passwords -> Expected: Fails, prompts again or returns to menu.
+Enter matching, valid new passwords -> Expected: Success message, user is logged out (forced re-login).
+Try logging in with old password -> Expected: Fails (password check).
+Log in with new password -> Expected: Succeeds.
