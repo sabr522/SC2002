@@ -149,7 +149,7 @@ public class MainApp {
             System.out.println("Saving users...");
             dataManager.saveUsers(allUsersMap);
             System.out.println("Saving all project data...");
-            dataManager.saveAllProjectData(allProjectsMap);
+            dataManager.saveAllProjectData(allProjectsMap, allUsersMap);
             System.out.println("Saving enquiries and replies...");
             dataManager.saveEnquiries(enquiryService); 
         } catch (Exception e) {

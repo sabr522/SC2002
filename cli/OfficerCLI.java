@@ -9,6 +9,7 @@ import data.DataManager;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -44,81 +45,46 @@ public class OfficerCLI {
         this.allUsersMap = allUsersMap;
     }
 
-        /**
+     /**
      * Shows the interactive menu for Officer role.
      */
     public void showOfficerMenu() {
         int choice = -1;
         while (choice != 0) {
             System.out.println("\n--- Officer Menu (" + officer.getName() + ") ---");
-            // Display options based on officer's current state
-            if (officer.getHandledProject() == null) {
+            // Show assignments first
+            Map<Project, String> assignments = officer.getProjectAssignments();
+            if (assignments.isEmpty()) {
+                System.out.println("Status: Not assigned to handle any project.");
                 System.out.println("1. Register for a Project to Handle");
-            } else if (!officer.isHandlingApproved()) {
-                System.out.println("1. (Registration Pending for: " + officer.getHandledProject().getName() + ")");
-            } else { // Approved and handling a project
-                System.out.println("1. (Handling Project: " + officer.getHandledProject().getName() + ")");
-            }
-            System.out.println("2. Show My Officer Profile");
-            if (officer.isHandlingApproved() && officer.getHandledProject() != null) {
-                 System.out.println("3. View Handled Project Details");
-                 System.out.println("4. List/Book Successful Applicants for Handled Project");
-                 System.out.println("5. Generate Booking Receipt for Handled Project");
-                 System.out.println("6. Manage Enquiries for Handled Project");
             } else {
-                 System.out.println("3. (View Project Details - N/A)");
-                 System.out.println("4. (List/Book Applicants - N/A)");
-                 System.out.println("5. (Generate Receipt - N/A)");
-                 System.out.println("6. (Manage Enquiries - N/A)");
+                System.out.println("Your Project Assignments:");
+                assignments.forEach((proj, status) ->
+                    System.out.println(" - Project: " + proj.getName() + " | Status: " + status)
+                );
+                 System.out.println("1. Register for Another Project (If eligible)"); // Keep register option
             }
+    
+            System.out.println("2. Show My Officer Profile");
+            System.out.println("3. View Project Details (Requires Selection)");
+            System.out.println("4. List/Book Successful Applicants (Requires Selection)");
+            System.out.println("5. Generate Booking Receipt (Requires Selection)");
+            System.out.println("6. Manage Enquiries (Requires Selection)");
             System.out.println("7. View/Apply for Projects (as Applicant)");
-
             System.out.println("0. Logout");
             System.out.print("Enter your choice: ");
-
-            choice = readIntInput(); // Use helper
-
+            choice = readIntInput();
+    
             switch (choice) {
-                case 1:
-                    if (officer.getHandledProject() == null) {
-                         registerForProject(); // Allow registration attempt
-                    } else {
-                         System.out.println("You are already handling or pending approval for a project.");
-                         showOfficerProfile(); // Show current status
-                    }
-                    break;
-                case 2:
-                    showOfficerProfile();
-                    break;
-                case 3:
-                     if (officer.isHandlingApproved() && officer.getHandledProject() != null) {
-                         viewProjectDetails(); // Call renamed method
-                     } else { System.out.println("Option not available."); }
-                    break;
-                case 4:
-                     if (officer.isHandlingApproved() && officer.getHandledProject() != null) {
-                        handleFlatBooking();
-                     } else { System.out.println("Option not available."); }
-                    break;
-                case 5:
-                     if (officer.isHandlingApproved() && officer.getHandledProject() != null) {
-                         generateReceipt(); // Call method
-                     } else { System.out.println("Option not available."); }
-                    break;
-                case 6:
-                    if (officer.isHandlingApproved() && officer.getHandledProject() != null) {
-                         manageEnquiries(); // Call method
-                    } else { System.out.println("Option not available."); }
-                    break;
-                case 7:
-                     handleOfficerAsApplicantActions(); // New handler for applicant actions
-                     break;
-                case 0:
-                    System.out.println("Logging out from Officer role...");
-                    // Saving handled by MainApp
-                    break;
-                default:
-                    System.out.println("Invalid choice, please try again.");
+                case 1: registerForProject(); break; 
+                case 2: showOfficerProfile(); break; 
+                case 3: viewProjectDetails(); break; 
+                case 4: handleFlatBooking(); break; 
+                case 5: generateReceipt(); break;   
+                case 6: manageEnquiries(); break;   
+                case 7: handleOfficerAsApplicantActions(); break;
+                case 0: System.out.println("Logging out..."); break;
+                default: System.out.println("Invalid choice..."); break;
             }
         }
     }
@@ -131,12 +97,18 @@ public class OfficerCLI {
         // Filter out projects the officer might have applied to as Applicant
         Project applicantProject = officer.getProject(); // Inherited method
         int count = 0;
+
         for (Project project : allProjectsMap.values()) {
              // Don't list if they applied as applicant, or if it's the one they are already pending/handling
             if (project.equals(applicantProject) || project.equals(officer.getHandledProject())) {
                  continue;
             }
-            System.out.println("- " + project.getName() + " (" + project.getNeighbourhood() + ")");
+            java.time.format.DateTimeFormatter displayFormat = java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy");
+            String newProjectDates = "(Dates N/A)";
+             if (project.getAppOpeningDate() != null && project.getAppClosingDate() != null) {
+                  newProjectDates = "(" + project.getAppOpeningDate().format(displayFormat) + " to " + project.getAppClosingDate().format(displayFormat) + ")";
+             }
+            System.out.println("- " + project.getName() + " (" + project.getNeighbourhood() + ") Period: " + newProjectDates);
             count++;
         }
         if (count == 0) {
@@ -156,8 +128,10 @@ public class OfficerCLI {
     }
 
     private void viewProjectDetails() {
-        // Calls the method in Officer class to view HANDLED project
-        officer.viewProject();
+        Project project = selectHandledProject("View Details");
+        if (project != null) {
+            officer.viewProject(project); // Call officer method with selected project
+        }
     }
 
     /**
@@ -165,57 +139,73 @@ public class OfficerCLI {
      * Retrieves bookable applicants from the Officer object, handles user selection,
      * and calls the Officer's booking logic.
      */
-    private void handleFlatBooking() { // Renamed handler
-        if (!officer.isHandlingApproved() || officer.getHandledProject() == null) {
-            System.out.println("You must be an approved officer handling a project to list/book applicants.");
+    private void handleFlatBooking() { 
+         // 1. Check if Officer is approved and handling exactly one project
+         Project handledProject = null;
+         List<Project> approvedProjects = officer.getApprovedHandledProjects();
+         
+         if (approvedProjects.isEmpty()) {
+            System.out.println("You must be approved and handling a project to list/book applicants.");
+            // Check if they have pending projects
+            if (!officer.getPendingHandledProjects().isEmpty()) {
+                 System.out.println("Your project assignment(s) are still pending approval.");
+            }
             return;
+        } else {
+            // Exactly one approved project
+            handledProject = approvedProjects.get(0);
         }
 
-        // 1. Get the list of applicants eligible for booking from the Officer
-        List<Applicant> bookableApplicants = officer.getBookableApplicants();
+        // Ensure we have a valid handled project context now
+        if (handledProject == null) {
+             System.out.println("Could not determine the project context. Cannot proceed.");
+             return;
+        }
+
+        System.out.println("Operating on project: " + handledProject.getName());
+
+        // 2. Get the list of applicants eligible for booking *from the specific handled project*
+        List<Applicant> successfulList = handledProject.getSuccessfulApplicants();
+        List<Applicant> bookableApplicants = new ArrayList<>();
+        if (successfulList != null) {
+             for (Applicant app : successfulList) {
+                  if (app != null && "Successful".equals(app.getAppStatus())) {
+                       bookableApplicants.add(app);
+                  }
+             }
+        }
 
         if (bookableApplicants.isEmpty()) {
-            System.out.println("No applicants currently eligible for booking in project '" + officer.getHandledProject().getName() + "'.");
+            System.out.println("No applicants currently eligible for booking in project '" + handledProject.getName() + "'.");
             return;
         }
 
-        // 2. Display the list to the Officer
+        // 3. Display the list to the Officer
         System.out.println("\n--- Applicants Eligible for Booking ---");
-        System.out.println("Project: " + officer.getHandledProject().getName());
+        System.out.println("Project: " + handledProject.getName());
         for (int i = 0; i < bookableApplicants.size(); i++) {
             Applicant app = bookableApplicants.get(i);
-            // Use printf for better formatting
             System.out.printf("%d. %s (%s) - Applied for: %s%n",
-                            (i + 1), app.getName(), app.getNric(), app.getTypeFlat());
+                              (i + 1), app.getName(), app.getNric(), app.getTypeFlat());
         }
         System.out.println("0. Cancel Booking");
 
-        // 3. Get Officer's choice
+        // 4. Get Officer's choice
         int choice;
         Applicant applicantToBook = null;
         while (true) {
-            // Use the CLI's own readIntInput method (ensure it exists and uses this.scanner)
-            choice = readIntInput("Select applicant number to book flat for (0 to cancel): ");
-            if (choice == 0) {
-                System.out.println("Booking cancelled.");
-                return;
-            }
+            choice = readIntInput("Select applicant number to book flat for (0 to cancel): "); // Use CLI's helper
+            if (choice == 0) { System.out.println("Booking cancelled."); return; }
             if (choice > 0 && choice <= bookableApplicants.size()) {
                 applicantToBook = bookableApplicants.get(choice - 1);
-                if (applicantToBook != null) {
-                    break; // Valid selection
-                } else {
-                    System.out.println("Invalid applicant entry in list. Please report this error."); // Should not happen
-                }
+                if (applicantToBook != null) break;
+                else System.out.println("Invalid list entry selected."); // Error
             } else {
                 System.out.println("Invalid selection. Please enter a number between 0 and " + bookableApplicants.size() + ".");
             }
         }
+        boolean success = officer.bookFlatForApplicant(applicantToBook, handledProject);
 
-        // 4. Call the Officer's method to perform the booking action
-        boolean success = officer.bookFlatForApplicant(applicantToBook);
-
-        // Officer method already prints success/failure messages
     }
 
     /**
@@ -224,11 +214,7 @@ public class OfficerCLI {
      */
     private void generateReceipt() {
         // 1. Check if officer is handling a project
-        Project handledProject = officer.getHandledProject();
-        if (!officer.isHandlingApproved() || handledProject == null) {
-            System.out.println("You must be approved and handling a project to generate receipts.");
-            return;
-        }
+        Project handledProject = selectHandledProject("Generate Receipt");
 
         // 2. Get list of booked applicants from the project
         List<Applicant> bookedList = handledProject.getBookedApplicants(); 
@@ -270,7 +256,7 @@ public class OfficerCLI {
 
         // 5. Call the officer's logic method with the selected NRIC
         if (selectedNric != null) {
-            officer.generateReceipt(selectedNric); // Call the existing logic method
+            officer.generateReceipt(handledProject, selectedNric); // Call the existing logic method
         }
     }
 
@@ -440,5 +426,64 @@ public class OfficerCLI {
 
         // 5. Call the *Officer's overridden* applyProject method
         officer.applyProject(availableProjects, selectedProject.getName(), chosenFlatType);
+    }
+
+    /** Prompts officer to select one of their handled/pending projects */
+    private Project selectHandledProject(String promptAction) {
+    Map<Project, String> assignments = officer.getProjectAssignments();
+    List<Project> options = new ArrayList<>(assignments.keySet()); // Get list of projects
+
+    if (options.isEmpty()) {
+        System.out.println("You are not assigned to any projects to perform this action.");
+        return null;/** Prompts officer to select one of their handled/pending projects */
+    }
+
+    if (options.size() == 1) {
+         Project singleProject = options.get(0);
+         // Check if approved if action requires it
+         if(!"Approved".equalsIgnoreCase(assignments.get(singleProject)) &&
+            (promptAction.contains("Book") || promptAction.contains("Receipt") || promptAction.contains("Manage Enquiries"))){
+              System.out.println("Your assignment for project '" + singleProject.getName() + "' is still pending approval.");
+              return null;
+         }
+         System.out.println("Acting on your only assigned project: " + singleProject.getName());
+         return singleProject; // Auto-select if only one
+    }
+
+    System.out.println("\nSelect Project to " + promptAction + ":");
+    Map<Integer, Project> choiceMap = new HashMap<>();
+    int index = 1;
+    for (Project p : options) {
+         // Only list projects eligible for the action (e.g., must be approved for booking)
+         boolean eligibleForAction = true;
+         String status = assignments.get(p);
+         if(!"Approved".equalsIgnoreCase(status) &&
+             (promptAction.contains("Book") || promptAction.contains("Receipt") || promptAction.contains("Manage Enquiries")))
+         {
+              eligibleForAction = false; // Cannot perform these actions if pending
+         }
+
+         if(eligibleForAction) {
+              System.out.printf("%d. %s (Status: %s)%n", index, p.getName(), status);
+              choiceMap.put(index, p);
+              index++;
+         } else {
+              System.out.printf("- %s (Status: %s - Action N/A)%n", p.getName(), status);
+         }
+    }
+     if(choiceMap.isEmpty()){
+          System.out.println("No projects currently eligible for this action.");
+          return null;
+     }
+    System.out.println("0. Cancel");
+
+    while (true) {
+        int choice = readIntInput("Enter project number: ");
+        if (choice == 0) return null;
+        if (choiceMap.containsKey(choice)) {
+            return choiceMap.get(choice);
+        }
+        System.out.println("Invalid selection.");
+    }
     }
 }

@@ -258,25 +258,33 @@ public class Manager extends User {
 
         // Find the first project managed by this manager where the officer is pending
         for (Project project : allProjectsMap.values()) {
-            // Check ownership using creatorName
             if (project != null && this.getName().equals(project.getCreatorName())) {
-                 // Check if the officer is in the pending list for this project
-                 List<Officer> pendingList = project.getPendingOfficerRegistrations(); 
-                 if (pendingList != null && pendingList.contains(officerToUpdate)) {
+                 // Check the OFFICER'S state for this project
+                 String currentStatus = officerToUpdate.getStatusForProject(project);
+
+                 if ("Pending".equalsIgnoreCase(currentStatus)) { // Found the pending assignment
+                     targetProject = project; // Found the project context
                      try {
+                         if (approve) {
+                             // Update Project's approved list 
+                             if (!project.updateArrOfOfficers(this.getName(), officerToUpdate)) {
+                                  System.err.println("Failed to update project's officer list during approval.");
+                                  return false; // Stop processing
+                             }
+                             // Update Officer's map state
+                             officerToUpdate.updateProjectAssignment(project, "Approved");
+                             System.out.println("Officer '" + officerToUpdate.getName() + "' approved for project '" + project.getName() + "'.");
 
-                        if (approve) {
-                            // Add to approved list
-                            project.updateArrOfOfficers(this.name, officerToUpdate);
-                            System.out.println("Officer '" + officerToUpdate.getName() + "' approved for project '" + project.getName() + "'.");
-                        } else {
-                            System.out.println("Officer '" + officerToUpdate.getName() + "' registration rejected for project '" + project.getName() + "'.");
-                        }
-
-                        officerToUpdate.setHandlingApproved(approve);
-                        processed = true;
-                        targetProject = project; // Store project for logging/confirmation
-                        break; // Process only the first match found
+                         } else { // Rejecting
+                             if (project.getPendingOfficerRegistrations() != null) {
+                                 project.getPendingOfficerRegistrations().removeIf(o -> o != null && o.equals(officerToUpdate));
+                             }
+                             // Remove assignment from Officer's map
+                             officerToUpdate.updateProjectAssignment(project, null);
+                             System.out.println("Officer '" + officerToUpdate.getName() + "' registration rejected for project '" + project.getName() + "'.");
+                         }
+                         processed = true;
+                         break; 
                     } catch (Exception e) {
                          System.err.println("Error processing officer registration for " + officerToUpdate.getName() + " in project " + project.getName() + ": " + e.getMessage());
                          return false;

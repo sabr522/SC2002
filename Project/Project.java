@@ -239,6 +239,7 @@ public class Project {
 		}
 		System.out.println("Number of 2-Room: " + this.no2Room);
 		System.out.println("Number of 3-Room: " + this.no3Room);
+		System.out.println("Available rooms: [2-Room: " + this.avalNo2Room + ", 3-Room: " + this.avalNo3Room + "]");
 	
 	}
 	

@@ -396,18 +396,16 @@ public class DataManager {
                 if (project == null) {
                      System.err.println("Warning: Project '" + projectName + "' not found for officer assignment. Skipping row.");
                      continue;
+                }    
+                if (user == null) {
+                    System.err.println("Warning: Officer NRIC '" + officerNric + "' not found in users list for project '" + projectName + "'. Skipping row.");
+                    continue;
                 }
-                 if (user == null) {
-                      System.err.println("Warning: Officer NRIC '" + officerNric + "' not found in users list for project '" + projectName + "'. Skipping row.");
-                      continue;
-                 }
-
 
                 if (user instanceof Officer) { // Check if user is actually an Officer
                     Officer officer = (Officer) user;
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
-                    officer.setHandlingApproved(isApproved);
-                    officer.setHandledProject(project);
+                    officer.updateProjectAssignment(project, status);
                     
                     if (isApproved) {
                         project.updateArrOfOfficers(project.getCreatorName(), officer); //Adds approved officers 
@@ -600,10 +598,10 @@ public class DataManager {
      * @param projects The map of all Project objects.
      * @throws IOException If any write operation fails.
      */
-    public void saveAllProjectData(Map<String, Project> projects) throws IOException {
+    public void saveAllProjectData(Map<String, Project> projects, Map<String, User> users) throws IOException {
         saveProjectsCore(projects);
         saveProjectFlats(projects);
-        saveProjectOfficers(projects);
+        saveProjectOfficers(projects, users);
         saveApplications(projects);
         System.out.println("Completed saving all project-related data.");
     }
@@ -668,47 +666,31 @@ public class DataManager {
          System.out.println("Project flat data saved.");
     }
 
-    private void saveProjectOfficers(Map<String, Project> projects) throws IOException {
+    private void saveProjectOfficers(Map<String, Project> projects, Map<String, User> users) throws IOException {
         List<String[]> csvData = new ArrayList<>();
         // Header defined as constant: OFFICERS_HEADER
 
-        for (Project project : projects.values()) {
-            if (project == null) continue;
-             try {
-                // Save approved officers
-                List<Officer> approvedOfficers = project.getArrOfOfficers();
-                if (approvedOfficers != null) {
-                    for (Officer officer : approvedOfficers) {
-                        if (officer != null && officer.getNric() != null) { 
-                             csvData.add(new String[] {
-                                 project.getName(),
-                                 officer.getNric(),
-                                 "Approved"
-                             });
-                        }
-                    }
-                }
+        for (User user : users.values()) {
+            if (user instanceof Officer) {
+                Officer officer = (Officer) user;
+                Map<Project, String> assignments = officer.getProjectAssignments(); // Get the map
 
-                // Save pending officers
-                List<Officer> pendingOfficers = project.getPendingOfficerRegistrations(); 
-                 if (pendingOfficers != null) {
-                     for (Officer officer : pendingOfficers) {
-                         if (officer != null && officer.getNric() != null) { // Null checks
-                             csvData.add(new String[] {
-                                 project.getName(),
-                                 officer.getNric(),
-                                 "Pending"
-                             });
-                         }
+                for (Map.Entry<Project, String> entry : assignments.entrySet()) {
+                     Project project = entry.getKey();
+                     String status = entry.getValue();
+                     if (project != null && officer.getNric() != null && status != null) {
+                         csvData.add(new String[] {
+                             project.getName(),
+                             officer.getNric(),
+                             status // "Pending" or "Approved"
+                         });
                      }
-                 }
-             } catch (Exception e) {
-                  System.err.println("Error saving officer data for project: " + project.getName() + ". Skipping project officers.");
-                  e.printStackTrace();
-             }
+                }
+            }
         }
+        // This correctly reflects the state stored within each Officer object
         writeCsvFile(PROJECT_OFFICERS_CSV_PATH, csvData, OFFICERS_HEADER);
-         System.out.println("Project officer assignment data saved.");
+        System.out.println("Project officer assignment data saved.");
     }
 
 
