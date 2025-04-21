@@ -15,8 +15,6 @@ import java.util.Map;
 public class Officer extends Applicant {
 
     private Map<Project, String> projectAssignments;
-    private Project handledProject;
-    private boolean isHandlingApproved;
 
     /**
      * Constructor for Officer.
@@ -31,20 +29,10 @@ public class Officer extends Applicant {
         // Call protected Applicant constructor, passing the correct role
         super(name, nric, age, maritalStatus, password, "Officer");
         // Initialize Officer-specific fields
-        this.handledProject = null;
-        this.isHandlingApproved = false;
         this.projectAssignments = new HashMap<>();
     }
 
     // --- Getters and Setters for Officer state ---
-
-    /** 
-     * Gets the Project object this officer is handling or pending approval for. 
-     * @return The project this officer is registered to handle
-    */
-    public Project getHandledProject() {
-        return handledProject;
-    }
 
     /** 
      * Gets the Project hashmap Project:Status String this officer is handling or pending approval for. 
@@ -108,31 +96,6 @@ public class Officer extends Applicant {
         } else {
              System.err.println("WARN: Invalid status '" + status + "' provided for officer assignment update.");
         }
-    }
-
-
-    /**
-     * Sets the Project this officer will handle (called by Manager or DataManager).
-     * @param project Project reference
-     */
-    public void setHandledProject(Project project) {
-        this.handledProject = project;
-    }
-
-    /** 
-     * Gets the approval status for handling the assigned project. 
-     *  @return True if the officer has been approved
-     */
-    public boolean isHandlingApproved() {
-        return isHandlingApproved;
-    }
-
-    /** 
-     * Sets the approval status (called by Manager or DataManager). 
-     	* @param approved Boolean flag
-     */
-    public void setHandlingApproved(boolean approved) {
-        this.isHandlingApproved = approved;
     }
 
     // --- Officer Actions ---
@@ -247,7 +210,7 @@ public class Officer extends Applicant {
             return new ArrayList<>();
          }
     
-        List<Applicant> successfulList = this.handledProject.getSuccessfulApplicants(); // Assumes Project getter exists
+        List<Applicant> successfulList = projectToBookIn.getSuccessfulApplicants();
     
         if (successfulList == null || successfulList.isEmpty()) {
             return new ArrayList<>();
@@ -373,7 +336,7 @@ public class Officer extends Applicant {
             System.out.println("Booked Flat Type: " + bookedApplicant.getTypeFlat());
             System.out.println("-------------------------");
         } else {
-            System.out.println("No booked applicant found with NRIC '" + nric + "' for project '" + this.handledProject.getName() + "'.");
+            System.out.println("No booked applicant found with NRIC '" + nric + "' for project '" + projectToGenerateIn.getName() + "'.");
         }
     }
 

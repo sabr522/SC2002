@@ -62,7 +62,7 @@ public class EnquiryCLI {
                 System.out.println("7. Edit My Reply");
                 System.out.println("8. View Enquiries for Project");
             }
-            if (isStaff) {
+            if (isManager) {
             	System.out.println("9. View All Enquiries");
             }
             System.out.println("0. Back to Main Menu");
@@ -372,43 +372,59 @@ public class EnquiryCLI {
         System.out.println("--- End of Replies ---");
     }
 
-    // officer & manager: reply to enquiry regarding their projects/all projects
+    /**
+     * Handles replying to an enquiry. Lists relevant enquiries based on user role and context.
+     * @param contextProjectName The specific project context, or null if viewing generally (Manager only).
+     */
     private void replyToEnquiry(String contextProjectName) {
-        if (!isStaff) { System.out.println("Access denied. Only Staff can reply."); return; }
+        // 1. Permission Check
+        if (!isStaff) {
+            System.out.println("Access denied. Only Staff can reply.");
+            return;
+        }
 
+        // 2. Determine which enquiries to list based on role and context
         List<Enquiry> enquiriesToList;
         String listingHeader;
+        String projectToFilter = contextProjectName; // Use the passed context initially
 
-        // Determine which enquiries to list for selection
-        if (isManager && contextProjectName == null) {
-            // Manager in general view: List ALL enquiries
+        if (isManager && projectToFilter == null) {
+            // Manager viewing generally -> List ALL enquiries
             listingHeader = "--- Replying to Enquiry (All Projects) ---";
             enquiriesToList = enquiryService.getAllEnquiries();
-        } else if (isStaff && contextProjectName != null) {
-            // Staff (Officer or Manager) in specific project view
-            listingHeader = "--- Replying to Enquiries for Project: " + contextProjectName + " ---";
-            enquiriesToList = enquiryService.getEnquiriesByProject(contextProjectName);
-        } else if (!isManager) { // Officer must have a project context
-            User currentUser = allUsersMap.get(currentNRIC); // Check if Officer has handled project
-            Project handledProject = null;
-            if (currentUser instanceof Officer) handledProject = ((Officer) currentUser).getHandledProject();
-            if(handledProject != null && handledProject.getName() != null){
-                String projectToFilter = handledProject.getName(); 
-                listingHeader = "--- Replying to Enquiries for Your Handled Project: " + projectToFilter + " ---";
-                enquiriesToList = enquiryService.getEnquiriesByProject(projectToFilter);
-            } else {
-                System.out.println("Officers must be handling an approved project to reply."); return;
+        } else if (projectToFilter != null) {
+            // Manager or Officer viewing specific project context provided by caller
+            if (!isManager) { // If it's an Officer, verify they handle this project
+                 User currentUser = allUsersMap.get(currentNRIC);
+                 boolean handlesThisProject = false;
+                 if (currentUser instanceof Officer) {
+                      Map<Project, String> assignments = ((Officer)currentUser).getProjectAssignments();
+                      for (Project p : assignments.keySet()) {
+                           if(p != null && projectToFilter.equals(p.getName()) && "Approved".equalsIgnoreCase(assignments.get(p))) {
+                                handlesThisProject = true;
+                                break;
+                           }
+                      }
+                 }
+                 if (!handlesThisProject) {
+                      System.out.println("Error: You are not the approved Officer for project '" + projectToFilter + "'. Cannot reply.");
+                      return;
+                 }
             }
-        }
-        else {
-            // Should not happen if logic in calling CLI is correct
-            System.out.println("Invalid state for replying to enquiry."); return;
+            // Proceed for Manager with context or verified Officer
+            listingHeader = "--- Replying to Enquiries for Project: " + projectToFilter + " ---";
+            enquiriesToList = enquiryService.getEnquiriesByProject(projectToFilter);
+        } else {
+            // This case: Officer (isStaff=true, isManager=false) but projectToFilter is null.
+            // This should not happen if OfficerCLI forces project selection first.
+            System.out.println("Error: A specific project context is required for Officers to reply.");
+            return;
         }
 
         System.out.println(listingHeader);
 
-        // Display relevant enquiries for selection
-        if (enquiriesToList.isEmpty()) {
+        // 3. Display relevant enquiries for selection
+        if (enquiriesToList == null || enquiriesToList.isEmpty()) { // Added null check
             System.out.println("No enquiries found in this scope to reply to.");
             return;
         }
@@ -417,6 +433,7 @@ public class EnquiryCLI {
         System.out.println("Select an Enquiry to reply to:");
         int displayIndex = 1;
         for (Enquiry e : enquiriesToList) {
+             if (e == null) continue; // Safety check
             String submitterName = getUserName(e.getApplicantNRIC());
             // Show project only if manager is viewing all
             String projectInfo = (isManager && contextProjectName == null) ? " | Project: " + e.getProject() : "";
@@ -427,7 +444,8 @@ public class EnquiryCLI {
         }
         System.out.println("0. Cancel");
 
-        System.out.print("Enter the number of the Enquiry: ");
+        // 4. Get user choice for Enquiry ID
+        System.out.println("Enter the number of the Enquiry: ");
         int choice = readIntInput();
         if (choice == 0 || !optionMap.containsKey(choice)) {
             System.out.println("Cancelled or invalid selection.");
@@ -435,16 +453,19 @@ public class EnquiryCLI {
         }
         int enquiryIdToReply = optionMap.get(choice);
 
-        // Get reply content (same as before)
+        // 5. Get reply content
         System.out.print("Enter your reply message: ");
-        String content = scanner.nextLine();
-        if (content.trim().isEmpty()) { System.out.println("Reply cannot be empty."); return; }
+        String content = scanner.nextLine(); // Use class scanner
+        if (content.trim().isEmpty()) {
+            System.out.println("Reply cannot be empty. Action cancelled.");
+            return;
+        }
 
-        // Submit reply (same as before)
+        // 6. Submit reply via service
         if (enquiryService.replyToEnquiry(enquiryIdToReply, currentNRIC, content)) {
             System.out.println("Reply added successfully to Enquiry ID " + enquiryIdToReply + ".");
         } else {
-            System.out.println("Reply failed. Enquiry might have been deleted.");
+            System.out.println("Reply failed. Enquiry might have been deleted or an error occurred.");
         }
     }
 

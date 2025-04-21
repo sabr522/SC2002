@@ -100,7 +100,7 @@ public class OfficerCLI {
 
         for (Project project : allProjectsMap.values()) {
              // Don't list if they applied as applicant, or if it's the one they are already pending/handling
-            if (project.equals(applicantProject) || project.equals(officer.getHandledProject())) {
+            if (project.equals(applicantProject)) {
                  continue;
             }
             java.time.format.DateTimeFormatter displayFormat = java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy");
@@ -260,16 +260,26 @@ public class OfficerCLI {
         }
     }
 
+    /**
+     * Handles viewing and replying to enquiries for ONE specific project
+     * that the officer is currently approved to handle. Prompts for selection if needed.
+     */
     private void manageEnquiries() {
-         Project handled = officer.getHandledProject();
-         if (handled == null || !officer.isHandlingApproved()) {
-            System.out.println("You must be handling an approved project to manage enquiries.");
+        // 1. Use the helper to let Officer select WHICH approved project they want to manage
+        Project projectToManage = selectHandledProject("Manage Enquiries for");
+
+        // 2. Check if a valid project was selected
+        if (projectToManage == null) {
             return;
-         }
-         String projectName = handled.getName();
-         System.out.println("\n--- Managing Enquiries for Project: " + projectName + " ---");
-         EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, officer.getNric(), true, false, scanner, allUsersMap, allProjectsMap); // Officer is staff
-         enquiryCLI.showEnquiryMenu(projectName);
+        }
+
+        // 3. Launch EnquiryCLI with the selected project context
+        String projectName = projectToManage.getName();
+        System.out.println("\n--- Managing Enquiries for Project: " + projectName + " ---");
+
+        // Ensure all necessary parameters are passed to EnquiryCLI constructor
+        EnquiryCLI enquiryCLI = new EnquiryCLI(enquiryService, officer.getNric(), true, false, scanner, allUsersMap, allProjectsMap); // Officer is staff
+        enquiryCLI.showEnquiryMenu(projectName); // Pass the selected project name
     }
 
     /** Handles actions where the Officer acts as an Applicant */
