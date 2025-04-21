@@ -238,7 +238,7 @@ public class DataManager {
                     }
                 }
                 if (user instanceof Applicant && hasPrefNeighbourhoodColumn) {
-                String prefNeighbourhoodStr = values[8].trim(); // Read from column 8
+                String prefNeighbourhoodStr = values[7].trim(); // Read from column 8
                 if (prefNeighbourhoodStr != null && !prefNeighbourhoodStr.isEmpty() && !"null".equalsIgnoreCase(prefNeighbourhoodStr)) {
                     ((Applicant) user).setPreferredNeighbourhood(prefNeighbourhoodStr);
                 } else {
