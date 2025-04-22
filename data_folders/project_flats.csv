@@ -1,6 +1,8 @@
 ProjectName,FlatType,TotalUnits,AvailableUnits,SellingPrice
 Orchid Grove,2-Room,50,50,350000
+MostAmazingPlace,2-Room,30,30,350000
+MostAmazingPlace,3-Room,50,50,450000
 Acacia Breeze,2-Room,50,50,350000
 Acacia Breeze,3-Room,30,20,450000
-Only3Room Project,3-Room,50,48,450000
+Only3Room Project,3-Room,50,49,450000
 Visibility Off Project,3-Room,50,50,450000

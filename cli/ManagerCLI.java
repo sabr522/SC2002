@@ -303,10 +303,11 @@ public class ManagerCLI {
                  allProjectsMap.remove(originalName); // Remove entry with the old key
                  allProjectsMap.put(newName, projectToEdit); // Add entry with the new key
             System.out.println("Changes will be saved on logout.");
-        } else {
+        }
+        }
+        else {
             System.err.println("Failed to update project (check console for errors like date clash or project not managed).");
             }
-        }
     }
 
     /**
